@@ -232,6 +232,96 @@ input[type="color"] { width: 100%; height: 18px; border: 1px solid #999; padding
 .hidden { display: none !important; }.secondary-btn { background: white; border: 1px solid #ccc; color: #333; padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; margin-right: 5px; }
 .secondary-btn:hover { background: #f0f0f0; }
 
+/* --- TOUCH & RESPONSIVE VERBETERINGEN --- */
+.manual-root-layer { touch-action: none; }
+.manual-root::before {
+   content: '';
+   position: absolute;
+   left: 50%;
+   top: 50%;
+   width: 34px;
+   height: 34px;
+   transform: translate(-50%, -50%);
+   border-radius: 50%;
+   background: transparent;
+}
+
+@media (pointer: coarse) {
+   .tb-btn,
+   .top-nav-btn,
+   .gpo-tab-btn,
+   .header-btn,
+   .primary-btn,
+   .secondary-btn,
+   .action-btn {
+       min-height: 40px;
+       min-width: 40px;
+   }
+
+   .gpo-tab-btn { width: 40px; height: 40px; font-size: 13px; }
+   .header-btn { width: 36px; height: 36px; }
+   .mini-swatch { width: 28px; height: 28px; }
+   input[type="color"] { min-height: 34px; }
+   .float-input { min-height: 36px; font-size: 16px; }
+   .float-label { font-size: 12px; }
+   .manual-root::before { width: 44px; height: 44px; }
+}
+
+@media (max-width: 1200px) {
+   body { overflow: hidden; }
+   #top-menu-bar {
+       height: auto;
+       min-height: 44px;
+       flex-wrap: wrap;
+       align-items: center;
+       padding: 6px 8px;
+       gap: 6px;
+   }
+   .top-nav-group,
+   .gpo-tabs-container,
+   .file-actions { flex-wrap: wrap; }
+   #dashboard-container {
+       overflow-x: auto;
+       overflow-y: auto;
+       -webkit-overflow-scrolling: touch;
+   }
+   #col-left { width: 420px; min-width: 420px; }
+   #col-right { width: 360px; min-width: 360px; }
+   #col-data { width: 420px; min-width: 420px; }
+   #col-vis { min-width: 360px; }
+   .vis-scroll-container { justify-content: flex-start; -webkit-overflow-scrolling: touch; }
+}
+
+@media (max-width: 800px) {
+   body { height: auto; min-height: 100vh; overflow: auto; }
+   #dashboard-container {
+       flex-direction: column;
+       white-space: normal;
+       overflow-x: hidden;
+       overflow-y: auto;
+       align-items: stretch;
+   }
+   #col-left,
+   #col-vis,
+   #col-right,
+   #col-data {
+       width: 100%;
+       min-width: 0;
+       height: auto;
+       max-height: none;
+   }
+   .panel { height: auto; overflow: visible; }
+   .row { flex-wrap: wrap; gap: 10px; }
+   .row > .float-group { min-width: 120px; flex: 1 1 120px !important; }
+   .vis-scroll-container { max-width: 100%; overflow: auto; }
+   .vis-container-wrapper { min-width: max-content; }
+   .collage-layout { padding: 10px; }
+   .collage-header-card { align-items: flex-start; }
+   .collage-options { flex-wrap: wrap; }
+   .col-grid[data-cols="2"],
+   .col-grid[data-cols="3"] { grid-template-columns: 1fr; }
+}
+
 /* ==========================================
    FIX: VERANKERING TEKST & LABELS AAN DE STAAF
    ========================================== */

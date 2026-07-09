@@ -2030,7 +2030,12 @@ function kopieerBeschrijving(elementId = "beschrijving-output") {
 // ==========================================
 // EXPORT (SINGLE)
 // ==========================================
-const EXPORT_CONFIG = { quality: 1.0, pixelRatio: 3, backgroundColor: "white" };
+const IS_MOBILE_OR_TABLET = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/i.test(navigator.userAgent));
+const EXPORT_CONFIG = {
+  quality: 1.0,
+  pixelRatio: IS_MOBILE_OR_TABLET ? 2 : 3,
+  backgroundColor: "white",
+};
 const BUFFER_PX = 12;
 
 async function captureGraphTight(elementId) {
@@ -2093,6 +2098,10 @@ async function downloadPNG() {
 
 async function kopieerNaarKlembord() {
   try {
+    if (typeof ClipboardItem === "undefined" || !navigator.clipboard?.write) {
+      toonNotificatie("Afbeelding kopiëren wordt niet ondersteund. Gebruik Download PNG.", "fout");
+      return;
+    }
     let targetId =
       document.getElementById("view-beworteling").style.display !== "none"
         ? "vis-beworteling-wrapper"
@@ -2103,7 +2112,7 @@ async function kopieerNaarKlembord() {
     toonNotificatie("✅ Gekopieerd naar klembord!", "succes");
   } catch (error) {
     console.error("Klembord fout:", error);
-    toonNotificatie("❌ Kopiëren mislukt.", "fout");
+    toonNotificatie("❌ Kopiëren mislukt. Gebruik Download PNG op Safari/tablet.", "fout");
   }
 }
 
@@ -2441,7 +2450,7 @@ async function copyCollageToClipboard() {
     }
     canvas.toBlob((blob) => {
       try {
-        if (typeof ClipboardItem !== "undefined") {
+        if (typeof ClipboardItem !== "undefined" && navigator.clipboard?.write) {
           const item = new ClipboardItem({ "image/png": blob });
           navigator.clipboard
             .write([item])
@@ -2450,10 +2459,10 @@ async function copyCollageToClipboard() {
             })
             .catch((e) => {
               console.error(e);
-              toonNotificatie("Browser blokkeert kopieeractie.", "fout");
+              toonNotificatie("Browser blokkeert kopieeractie. Gebruik Download Totaalplaatje.", "fout");
             });
         } else {
-          toonNotificatie("Browser ondersteunt dit niet.", "fout");
+          toonNotificatie("Afbeelding kopiëren wordt niet ondersteund. Gebruik Download Totaalplaatje.", "fout");
         }
       } catch (e) {
         toonNotificatie("Kopiëren mislukt.", "fout");
