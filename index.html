@@ -6,6 +6,7 @@
         <title>GPO Generator BETA</title>
         <link rel="stylesheet" href="style.css" />
         <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     </head>
     <body>
         <div id="top-menu-bar">
@@ -104,6 +105,14 @@
                         </div>
                     </div>
                     <div id="bodem-container"></div>
+                    <div class="field-photo-panel field-only" id="photos-fysisch-panel">
+                        <div class="field-photo-header">
+                            <strong>Foto’s fysisch</strong>
+                            <button class="tb-btn" onclick="triggerFieldPhotoUpload('fysisch')">+ Foto toevoegen</button>
+                        </div>
+                        <div class="field-photo-grid" id="photos-fysisch-grid"></div>
+                        <div class="field-photo-note">Maximaal 4 foto's. Foto’s worden verkleind opgeslagen in het projectbestand.</div>
+                    </div>
                 </div>
                 <div id="input-sectie-opname" style="display: none">
                     <div class="section-header">
@@ -124,6 +133,14 @@
                         </div>
                     </div>
                     <div id="opname-container"></div>
+                    <div class="field-photo-panel field-only" id="photos-beworteling-panel">
+                        <div class="field-photo-header">
+                            <strong>Foto’s wortelontwikkeling</strong>
+                            <button class="tb-btn" onclick="triggerFieldPhotoUpload('beworteling')">+ Foto toevoegen</button>
+                        </div>
+                        <div class="field-photo-grid" id="photos-beworteling-grid"></div>
+                        <div class="field-photo-note">Maximaal 4 foto's. Foto’s worden verkleind opgeslagen in het projectbestand.</div>
+                    </div>
                 </div>
             </div>
 
@@ -630,7 +647,7 @@
                         />
                     </div>
 
-                    <div style="display: flex; gap: 10px">
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap">
                         <button
                             class="tb-btn tb-btn-download"
                             style="
@@ -656,10 +673,43 @@
                         >
                             Kopieer Plaatje
                         </button>
+                        <button
+                            class="tb-btn"
+                            style="
+                                flex: 1;
+                                border: 1px solid #ccc;
+                                text-align: center;
+                                padding: 10px;
+                            "
+                            onclick="exportHuidigeGPOZip()"
+                        >
+                            Export huidige GPO
+                        </button>
+                        <button
+                            class="tb-btn"
+                            style="
+                                flex: 1;
+                                border: 1px solid #ccc;
+                                text-align: center;
+                                padding: 10px;
+                            "
+                            onclick="exportAlleGPOsZip()"
+                        >
+                            Export alles ZIP
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
+
+        <input
+            type="file"
+            id="field-photo-input"
+            accept="image/*"
+            capture="environment"
+            style="display: none"
+            onchange="handleFieldPhotoUpload(event)"
+        />
 
         <div id="collage-view" class="collage-layout" style="display: none">
             <div class="collage-header-card">

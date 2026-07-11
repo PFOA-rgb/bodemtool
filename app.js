@@ -198,6 +198,7 @@ document.addEventListener("DOMContentLoaded", () => {
   syncOpacity("disp", "slider");
 
   updateUI();
+  renderFieldPhotos();
 
   // FAILSAFE LOGICA
   const dashboard = document.getElementById("dashboard-container");
@@ -1570,6 +1571,104 @@ function heeftGPOData(gpoData) {
   );
 }
 
+let pendingPhotoCategory = null;
+const MAX_FIELD_PHOTOS = 4;
+const PHOTO_MAX_SIZE = 1600;
+const PHOTO_QUALITY = 0.8;
+
+function getEmptyPhotos() {
+  return { fysisch: [], beworteling: [] };
+}
+
+function ensureCurrentGPOPhotos() {
+  if (!window.projectData[currentGPO]) window.projectData[currentGPO] = { photos: getEmptyPhotos() };
+  if (!window.projectData[currentGPO].photos) window.projectData[currentGPO].photos = getEmptyPhotos();
+  if (!Array.isArray(window.projectData[currentGPO].photos.fysisch)) window.projectData[currentGPO].photos.fysisch = [];
+  if (!Array.isArray(window.projectData[currentGPO].photos.beworteling)) window.projectData[currentGPO].photos.beworteling = [];
+  return window.projectData[currentGPO].photos;
+}
+
+function triggerFieldPhotoUpload(category) {
+  slaHuidigProfielOpInGeheugen();
+  const photos = ensureCurrentGPOPhotos();
+  if (photos[category].length >= MAX_FIELD_PHOTOS) {
+    toonNotificatie("Maximaal 4 foto's per onderdeel.", "fout");
+    return;
+  }
+  pendingPhotoCategory = category;
+  document.getElementById("field-photo-input")?.click();
+}
+
+function resizeImageFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, PHOTO_MAX_SIZE / Math.max(img.width, img.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/jpeg", PHOTO_QUALITY));
+      };
+      img.onerror = reject;
+      img.src = reader.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function handleFieldPhotoUpload(event) {
+  const file = event.target.files?.[0];
+  event.target.value = "";
+  if (!file || !pendingPhotoCategory) return;
+  try {
+    const photos = ensureCurrentGPOPhotos();
+    if (photos[pendingPhotoCategory].length >= MAX_FIELD_PHOTOS) return;
+    const src = await resizeImageFile(file);
+    photos[pendingPhotoCategory].push({
+      id: `photo-${Date.now()}`,
+      label: `Foto ${photos[pendingPhotoCategory].length + 1}`,
+      src,
+    });
+    window.hasUnsavedChanges = true;
+    renderFieldPhotos();
+  } catch (error) {
+    console.error(error);
+    toonNotificatie("Foto toevoegen mislukt.", "fout");
+  }
+}
+
+function removeFieldPhoto(category, index) {
+  const photos = ensureCurrentGPOPhotos();
+  photos[category].splice(index, 1);
+  window.hasUnsavedChanges = true;
+  renderFieldPhotos();
+}
+
+function renderFieldPhotos() {
+  const photos = ensureCurrentGPOPhotos();
+  ["fysisch", "beworteling"].forEach((category) => {
+    const grid = document.getElementById(`photos-${category}-grid`);
+    if (!grid) return;
+    grid.innerHTML = photos[category]
+      .map(
+        (photo, idx) => `
+          <div class="field-photo-card">
+            <img src="${photo.src}" alt="${photo.label}">
+            <div class="field-photo-actions">
+              <span style="flex:1; font-size:12px;">${photo.label}</span>
+              <button class="action-btn" onclick="removeFieldPhoto('${category}', ${idx})">Verwijder</button>
+            </div>
+          </div>`,
+      )
+      .join("");
+  });
+}
+
 function dupliceerNaarVolgendeGPO() {
   const bron = currentGPO;
   const doel = bron + 1;
@@ -1594,6 +1693,7 @@ function dupliceerNaarVolgendeGPO() {
   window.projectData[doel] = JSON.parse(
     JSON.stringify(window.projectData[bron]),
   );
+  window.projectData[doel].photos = getEmptyPhotos();
   window.hasUnsavedChanges = true;
   wisselGPO(doel);
   toonNotificatie(`GPO ${bron} gekopieerd naar GPO ${doel}.`, "succes");
@@ -1647,6 +1747,7 @@ function wisselGPO(nieuwNummer) {
   }
   renderGPOTabs();
   syncMaxDieptes();
+  renderFieldPhotos();
 }
 
 function slaHuidigProfielOpInGeheugen() {
@@ -1657,6 +1758,7 @@ function slaHuidigProfielOpInGeheugen() {
     o: [],
     ro: [],
     rs: [],
+    photos: projectData[currentGPO]?.photos || getEmptyPhotos(),
     meta: {
       boom: document.getElementById("meta-boomnr")?.value || "",
       dist: document.getElementById("meta-afstand")?.value || "",
@@ -1784,6 +1886,113 @@ async function saveBlobBestand(blob, filename, pickerTypes) {
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
   return true;
+}
+
+function dataUrlToBase64(dataUrl) {
+  return dataUrl.split(",")[1] || "";
+}
+
+function cleanBestandsnaam(text) {
+  return String(text || "")
+    .replace(/[^a-zA-Z0-9\-\.]/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_|_$/g, "");
+}
+
+function buildProjectExportData() {
+  slaHuidigProfielOpInGeheugen();
+  return { data: projectData, global: window.globalSettings };
+}
+
+function buildRapportageTekst(gpoNummers) {
+  const regels = [];
+  regels.push(`Project: ${window.globalSettings.project || ""}`);
+  regels.push(`Locatie: ${window.globalSettings.locatie || ""}`);
+  regels.push(`Opdrachtgever: ${window.globalSettings.opdrachtgever || ""}`);
+  regels.push(`Onderzoeker: ${window.globalSettings.onderzoeker || ""}`);
+  regels.push("");
+  gpoNummers.forEach((nummer) => {
+    const data = projectData[nummer];
+    if (!data) return;
+    regels.push(`GPO ${nummer}`);
+    if (data.meta) {
+      regels.push(`Boom: ${data.meta.boom || ""}`);
+      regels.push(`Afstand: ${data.meta.dist || ""} cm`);
+      regels.push(`Windrichting: ${data.meta.wind || ""}`);
+    }
+    if (nummer === currentGPO) {
+      regels.push("Beschrijving fysisch:");
+      regels.push(document.getElementById("beschrijving-output")?.value || "");
+      regels.push("Beschrijving wortelontwikkeling:");
+      regels.push(document.getElementById("wortel-beschrijving-output")?.value || "");
+    }
+    regels.push("");
+  });
+  return regels.join("\n");
+}
+
+async function voegGPOAanZipToe(zip, nummer, includeImages) {
+  const data = projectData[nummer];
+  if (!data) return;
+  const folder = zip.folder(`GPO_${nummer}`);
+  const photos = data.photos || getEmptyPhotos();
+  ["fysisch", "beworteling"].forEach((category) => {
+    const photoFolder = folder.folder("fotos");
+    (photos[category] || []).forEach((photo, idx) => {
+      photoFolder.file(`GPO_${nummer}_${category}_${idx + 1}.jpg`, dataUrlToBase64(photo.src), { base64: true });
+    });
+  });
+
+  if (!includeImages) return;
+  const vorigeGPO = currentGPO;
+  if (currentGPO !== nummer) wisselGPO(nummer);
+  await new Promise((resolve) => setTimeout(resolve, 150));
+  const fysisch = await captureGraphTight("vis-fysisch-wrapper");
+  const beworteling = await captureGraphTight("vis-beworteling-wrapper");
+  folder.file(`GPO_${nummer}_Fysisch.png`, dataUrlToBase64(fysisch), { base64: true });
+  folder.file(`GPO_${nummer}_Wortelontwikkeling.png`, dataUrlToBase64(beworteling), { base64: true });
+  if (currentGPO !== vorigeGPO) wisselGPO(vorigeGPO);
+}
+
+async function exportGPOsZip(gpoNummers, filename, includeImages = true) {
+  if (typeof JSZip === "undefined") {
+    toonNotificatie("ZIP export is niet beschikbaar. Controleer je internetverbinding.", "fout");
+    return;
+  }
+  try {
+    const zip = new JSZip();
+    zip.file("project.json", JSON.stringify(buildProjectExportData(), null, 2));
+    zip.file("rapportage_tekst.txt", buildRapportageTekst(gpoNummers));
+    for (const nummer of gpoNummers) await voegGPOAanZipToe(zip, nummer, includeImages);
+    const blob = await zip.generateAsync({ type: "blob" });
+    await saveBlobBestand(blob, filename, [{ description: "ZIP archief", accept: { "application/zip": [".zip"] } }]);
+  } catch (error) {
+    console.error(error);
+    toonNotificatie("ZIP export mislukt.", "fout");
+  }
+}
+
+function exportHuidigeGPOZip() {
+  const project = cleanBestandsnaam(window.globalSettings.project) || "Bodemtool";
+  exportGPOsZip([currentGPO], `${project}_GPO_${currentGPO}_export.zip`, true);
+}
+
+function exportAlleGPOsZip() {
+  const nummers = [];
+  slaHuidigProfielOpInGeheugen();
+  for (let i = 1; i <= 10; i++) if (heeftGPOData(projectData[i])) nummers.push(i);
+  if (nummers.length === 0) {
+    toonNotificatie("Geen GPO's om te exporteren.", "fout");
+    return;
+  }
+  if (IS_MOBILE_OR_TABLET) {
+    const doorgaan = confirm(
+      "Export alles kan op tablet/Safari even duren. Wil je doorgaan?",
+    );
+    if (!doorgaan) return;
+  }
+  const project = cleanBestandsnaam(window.globalSettings.project) || "Bodemtool";
+  exportGPOsZip(nummers, `${project}_alle_GPOs_export.zip`, true);
 }
 
 async function slaOpProject() {
