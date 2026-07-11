@@ -145,8 +145,31 @@ const KLEUR_NAMEN = {
   "#f2efe9": "lichtbruin",
 };
 
+function applyFieldMode(enabled) {
+  document.body.classList.toggle("field-mode", enabled);
+  const btn = document.getElementById("field-mode-toggle");
+  if (btn) {
+    btn.classList.toggle("active", enabled);
+    btn.setAttribute("aria-pressed", enabled ? "true" : "false");
+    btn.innerText = enabled ? "Veldmodus aan" : "Veldmodus";
+  }
+}
+
+function initFieldMode() {
+  const savedMode = localStorage.getItem("bodemtool-field-mode");
+  const autoFieldMode = window.matchMedia("(pointer: coarse), (max-width: 800px)").matches;
+  applyFieldMode(savedMode === null ? autoFieldMode : savedMode === "true");
+}
+
+function toggleFieldMode() {
+  const enabled = !document.body.classList.contains("field-mode");
+  localStorage.setItem("bodemtool-field-mode", enabled ? "true" : "false");
+  applyFieldMode(enabled);
+}
+
 // --- OPSTARTEN ---
 document.addEventListener("DOMContentLoaded", () => {
+  initFieldMode();
   genereerGPOTabs();
 
   // Initialiseer lege lagen
