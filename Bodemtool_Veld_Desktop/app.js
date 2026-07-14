@@ -18,6 +18,7 @@ window.hasUnsavedChanges = false;
 window.globalSettings = {
   showHeader: false,
   headers: { fysisch: "Fysisch", beworteling: "Wortelontwikkeling" },
+  pattern: "Geen",
   project: "",
   locatie: "",
   opdrachtgever: "",
@@ -287,9 +288,7 @@ function getBodemBgStyle(c, i, arr) {
   const heeftVerloop = c.querySelector(".inp-grad")
     ? c.querySelector(".inp-grad").checked
     : false;
-  const textuur = c.querySelector(".inp-textuur")
-    ? c.querySelector(".inp-textuur").value
-    : "Geen";
+  const textuur = getGlobalPattern();
 
   let bgKleur = eigenKleur;
   let bgAfbeelding = "";
@@ -322,10 +321,8 @@ function getBodemBgStyle(c, i, arr) {
 }
 
 // 2. Genereert de onzichtbare, gestapelde zandlagen die luisteren naar jouw sliders
-function getTextureLayersHtml(c) {
-  const textuur = c.querySelector(".inp-textuur")
-    ? c.querySelector(".inp-textuur").value
-    : "Geen";
+function getTextureLayersHtml() {
+  const textuur = getGlobalPattern();
   if (textuur !== "Zand") return "";
 
   const PATROON_AO = typeof MAP_AO_ZAND !== "undefined" ? MAP_AO_ZAND : "none";
@@ -402,10 +399,6 @@ function voegBodemLaagToe(d = null) {
             <select class="float-input inp-type" onchange="handleSelectChange(this)">${optsWithCustom(DATA_BTYPES, d?.t || "Zand")}</select>
             <label class="float-label">Type</label>
             <input type="text" class="custom-input inp-type-custom" value="${d?.t || ""}" style="display:${d && !DATA_BTYPES.includes(d.t) ? "block" : "none"}" onkeyup="updateUI()">
-        </div>
-        <div style="flex:1" class="float-group desktop-only">
-            <select class="float-input inp-textuur" onchange="updateUI()">${opts(DATA_TEXTUREN, d?.tx || "Geen")}</select>
-            <label class="float-label">Patroon (weergave)</label>
         </div>
         <div class="desktop-only" style="display:flex; flex-direction:column; justify-content:center; margin-left:5px; gap:2px;">
             <button type="button" onclick="adjustOffset(this, -2)" style="width:20px; height:18px; font-size:10px; padding:0; cursor:pointer; background:#eee; border:1px solid #ccc; border-radius:3px;">▲</button>
@@ -760,6 +753,19 @@ function updateGlobalMeta() {
     document.getElementById("meta-opdrachtgever").value;
   window.globalSettings.onderzoeker =
     document.getElementById("meta-onderzoeker").value;
+}
+
+function getGlobalPattern() {
+  return window.globalSettings.pattern || "Geen";
+}
+
+function updateGlobalPattern() {
+  window.globalSettings.pattern = document.getElementById("inputPatroon")?.value || "Geen";
+  window.hasUnsavedChanges = true;
+  updateUI();
+  updateRootUI();
+  if (document.getElementById("collage-view").style.display !== "none")
+    updateCollageUI();
 }
 
 // ==========================================
@@ -1781,7 +1787,6 @@ function slaHuidigProfielOpInGeheugen() {
       k: getSafeVal(c, ".inp-kleur"),
       g: c.querySelector(".inp-grad")?.checked || false,
       off: getSafeVal(c, ".inp-offset"),
-      tx: getSafeVal(c, ".inp-textuur"),
     });
   });
 
@@ -1856,6 +1861,7 @@ function herstelMetaGegevens() {
   setVal("meta-locatie", window.globalSettings.locatie || "");
   setVal("meta-opdrachtgever", window.globalSettings.opdrachtgever || "");
   setVal("meta-onderzoeker", window.globalSettings.onderzoeker || "");
+  setVal("inputPatroon", getGlobalPattern());
   document.getElementById("toggle-header").checked =
     window.globalSettings.showHeader;
 }
@@ -2019,11 +2025,22 @@ function laadProject(event) {
       const parsed = JSON.parse(evt.target.result);
       if (parsed.global) {
         window.projectData = parsed.data;
-        window.globalSettings = parsed.global;
+        window.globalSettings = {
+          showHeader: false,
+          headers: { fysisch: "Fysisch", beworteling: "Wortelontwikkeling" },
+          pattern: "Geen",
+          project: "",
+          locatie: "",
+          opdrachtgever: "",
+          onderzoeker: "",
+          ...parsed.global,
+        };
       } else {
         window.projectData = parsed;
         window.globalSettings = {
           showHeader: false,
+          headers: { fysisch: "Fysisch", beworteling: "Wortelontwikkeling" },
+          pattern: "Geen",
           project: "",
           locatie: "",
           opdrachtgever: "",

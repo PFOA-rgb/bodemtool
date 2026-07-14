@@ -513,6 +513,25 @@
                         class="row"
                         style="margin-bottom: 0; align-items: center"
                     >
+                        <div class="float-group" style="width: 100%">
+                            <select
+                                id="inputPatroon"
+                                class="float-input"
+                                onchange="updateGlobalPattern()"
+                            >
+                                <option value="Geen">Geen</option>
+                                <option value="Verharding">Verharding</option>
+                                <option value="Zand">Zand</option>
+                                <option value="Klei">Klei</option>
+                            </select>
+                            <label class="float-label">Patroon</label>
+                        </div>
+                    </div>
+
+                    <div
+                        class="row"
+                        style="margin-bottom: 0; align-items: center"
+                    >
                         <div class="float-group" style="width: 80px">
                             <input
                                 type="number"
