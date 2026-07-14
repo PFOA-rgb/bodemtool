@@ -403,11 +403,11 @@ function voegBodemLaagToe(d = null) {
             <label class="float-label">Type</label>
             <input type="text" class="custom-input inp-type-custom" value="${d?.t || ""}" style="display:${d && !DATA_BTYPES.includes(d.t) ? "block" : "none"}" onkeyup="updateUI()">
         </div>
-        <div style="flex:1" class="float-group">
+        <div style="flex:1" class="float-group desktop-only">
             <select class="float-input inp-textuur" onchange="updateUI()">${opts(DATA_TEXTUREN, d?.tx || "Geen")}</select>
-            <label class="float-label">Textuur</label>
+            <label class="float-label">Patroon (weergave)</label>
         </div>
-        <div style="display:flex; flex-direction:column; justify-content:center; margin-left:5px; gap:2px;">
+        <div class="desktop-only" style="display:flex; flex-direction:column; justify-content:center; margin-left:5px; gap:2px;">
             <button type="button" onclick="adjustOffset(this, -2)" style="width:20px; height:18px; font-size:10px; padding:0; cursor:pointer; background:#eee; border:1px solid #ccc; border-radius:3px;">▲</button>
             <button type="button" onclick="adjustOffset(this, 2)" style="width:20px; height:18px; font-size:10px; padding:0; cursor:pointer; background:#eee; border:1px solid #ccc; border-radius:3px;">▼</button>
             <input type="hidden" class="inp-offset" value="${offset}">
