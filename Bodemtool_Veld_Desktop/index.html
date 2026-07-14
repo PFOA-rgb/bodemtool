@@ -220,19 +220,6 @@
                         gap: 10px;
                     "
                 >
-                    <div class="row" style="margin-bottom: 0">
-                        <div class="float-group" style="width: 100px">
-                            <input
-                                type="number"
-                                id="maxDiepte"
-                                class="float-input"
-                                value="100"
-                                onchange="syncMaxDieptes()"
-                            />
-                            <label class="float-label">Max Diepte (cm)</label>
-                        </div>
-                    </div>
-
                     <div
                         class="row"
                         style="margin-bottom: 0; align-items: center"
@@ -461,6 +448,18 @@
                             /><label class="float-label"
                                 >Afstand tot stamvoet (cm)</label
                             >
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="float-group" style="flex: 1">
+                            <input
+                                type="number"
+                                id="maxDiepte"
+                                class="float-input"
+                                value="100"
+                                onchange="syncMaxDieptes()"
+                            />
+                            <label class="float-label">Onderzoeksdiepte (cm)</label>
                         </div>
                     </div>
                     <div class="row">
