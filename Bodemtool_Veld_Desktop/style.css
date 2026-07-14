@@ -270,6 +270,17 @@ input[type="color"] { width: 100%; height: 18px; border: 1px solid #999; padding
     font-style: italic;
 }
 
+.visual-settings-note {
+    white-space: normal;
+    font-size: 12px;
+    line-height: 1.35;
+    color: #555;
+    background: #f7f7f7;
+    border-left: 3px solid #999;
+    padding: 8px 10px;
+    border-radius: 4px;
+}
+
 textarea[readonly] {
     background: #fafafa;
     color: #222;

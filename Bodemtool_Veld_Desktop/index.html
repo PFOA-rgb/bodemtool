@@ -91,300 +91,6 @@
         </div>
 
         <div id="dashboard-container">
-            <div class="panel col-panel" id="col-left">
-                <div id="input-sectie-bodem">
-                    <div class="section-header">
-                        <h3 class="simple-title">Bodemkenmerken</h3>
-                        <div class="header-controls">
-                            <button
-                                class="header-btn remove"
-                                onclick="verwijderLaag('bodem-container')"
-                            >
-                                -
-                            </button>
-                            <button
-                                class="header-btn add"
-                                onclick="voegBodemLaagToe()"
-                            >
-                                +
-                            </button>
-                        </div>
-                    </div>
-                    <div id="bodem-container"></div>
-                    <div class="field-photo-panel field-only" id="photos-fysisch-panel">
-                        <div class="field-photo-header">
-                            <strong>📷 Foto’s fysisch</strong>
-                            <button class="tb-btn" onclick="triggerFieldPhotoUpload('fysisch')">+ Foto maken/toevoegen</button>
-                        </div>
-                        <div class="field-photo-grid" id="photos-fysisch-grid"></div>
-                        <div class="field-photo-note">Maximaal 4 foto's. Foto’s worden verkleind opgeslagen in het projectbestand.</div>
-                    </div>
-                </div>
-                <div id="input-sectie-opname" style="display: none">
-                    <div class="section-header">
-                        <h3 class="simple-title">Opnamewortels</h3>
-                        <div class="header-controls">
-                            <button
-                                class="header-btn remove"
-                                onclick="verwijderLaag('opname-container')"
-                            >
-                                -
-                            </button>
-                            <button
-                                class="header-btn add"
-                                onclick="voegOpnameLaagToe()"
-                            >
-                                +
-                            </button>
-                        </div>
-                    </div>
-                    <div id="opname-container"></div>
-                    <div class="field-photo-panel field-only" id="photos-beworteling-panel">
-                        <div class="field-photo-header">
-                            <strong>📷 Foto’s wortelontwikkeling</strong>
-                            <button class="tb-btn" onclick="triggerFieldPhotoUpload('beworteling')">+ Foto maken/toevoegen</button>
-                        </div>
-                        <div class="field-photo-grid" id="photos-beworteling-grid"></div>
-                        <div class="field-photo-note">Maximaal 4 foto's. Foto’s worden verkleind opgeslagen in het projectbestand.</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="panel col-vis" id="col-vis">
-                <div class="vis-scroll-container">
-                    <div id="vis-fysisch-wrapper" class="vis-container-wrapper">
-                        <div id="vis-header-fysisch" class="vis-header-title">
-                            Fysisch
-                        </div>
-                        <div id="view-fysisch" class="profile-container">
-                            <div
-                                class="vis-column col-text-bodem vis-fysisch-dims"
-                                id="vis-text-bodem"
-                            ></div>
-                            <div
-                                class="vis-column col-bar-bodem vis-fysisch-dims"
-                                id="vis-bar-bodem"
-                            ></div>
-                            <div
-                                class="vis-column col-bar-bodem-spacer vis-fysisch-dims"
-                            ></div>
-                            <div
-                                class="vis-column col-strip-ondergrond vis-fysisch-dims"
-                                id="vis-strip-ondergrond"
-                            ></div>
-                            <div
-                                class="vis-column col-text-ondergrond vis-fysisch-dims"
-                                id="vis-text-ondergrond"
-                            ></div>
-                        </div>
-                    </div>
-                    <div
-                        id="vis-beworteling-wrapper"
-                        class="vis-container-wrapper"
-                        style="display: none"
-                    >
-                        <div id="vis-header-root" class="vis-header-title">
-                            Wortelontwikkeling
-                        </div>
-                        <div id="view-beworteling" class="profile-container">
-                            <div
-                                class="vis-column col-text-root-left vis-beworteling-dims"
-                                id="vis-root-text-left"
-                            ></div>
-                            <div
-                                class="vis-column col-bar-root-left vis-beworteling-dims"
-                                id="vis-root-bar-left"
-                            ></div>
-                            <div
-                                class="vis-column col-bar-root-spacer vis-beworteling-dims"
-                            ></div>
-                            <div
-                                class="vis-column col-bar-root-right vis-beworteling-dims"
-                                id="vis-root-bar-right"
-                            ></div>
-                            <div
-                                class="vis-column col-text-root-right vis-beworteling-dims"
-                                id="vis-root-text-right"
-                            ></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div
-                    style="
-                        padding: 10px;
-                        border-top: 1px solid #eee;
-                        margin-top: auto;
-                        display: flex;
-                        flex-direction: column;
-                        gap: 10px;
-                    "
-                >
-                    <div
-                        class="row"
-                        style="margin-bottom: 0; align-items: center"
-                    >
-                        <div class="float-group" style="width: 80px">
-                            <input
-                                type="number"
-                                id="inputHoogte"
-                                class="float-input"
-                                value="350"
-                                min="200"
-                                max="1500"
-                                oninput="syncHoogte('input')"
-                            />
-                            <label class="float-label">Hoogte (px)</label>
-                        </div>
-                        <div style="flex: 1; padding-top: 14px">
-                            <input
-                                type="range"
-                                id="sliderHoogte"
-                                min="200"
-                                max="1500"
-                                value="350"
-                                step="10"
-                                style="width: 100%; cursor: pointer"
-                                oninput="syncHoogte('slider')"
-                            />
-                        </div>
-                    </div>
-
-                    <div
-                        class="row"
-                        style="margin-bottom: 0; align-items: center"
-                    >
-                        <div class="float-group" style="width: 80px">
-                            <input
-                                type="number"
-                                id="inputBreedte"
-                                class="float-input"
-                                value="120"
-                                min="80"
-                                max="500"
-                                oninput="syncBreedte('input')"
-                            />
-                            <label class="float-label">Breedte (px)</label>
-                        </div>
-                        <div style="flex: 1; padding-top: 14px">
-                            <input
-                                type="range"
-                                id="sliderBreedte"
-                                min="80"
-                                max="500"
-                                value="120"
-                                step="10"
-                                style="width: 100%; cursor: pointer"
-                                oninput="syncBreedte('slider')"
-                            />
-                        </div>
-                    </div>
-
-                    <div
-                        class="row"
-                        style="margin-bottom: 0; align-items: center"
-                    >
-                        <div class="float-group" style="width: 80px">
-                            <input
-                                type="number"
-                                id="inputAoOpacity"
-                                class="float-input"
-                                value="100"
-                                min="0"
-                                max="100"
-                                oninput="syncOpacity('ao', 'input')"
-                            />
-                            <label class="float-label">Schaduw %</label>
-                        </div>
-                        <div style="flex: 1; padding-top: 14px">
-                            <input
-                                type="range"
-                                id="sliderAoOpacity"
-                                min="0"
-                                max="100"
-                                value="100"
-                                step="1"
-                                style="width: 100%; cursor: pointer"
-                                oninput="syncOpacity('ao', 'slider')"
-                            />
-                        </div>
-                    </div>
-
-                    <div
-                        class="row"
-                        style="margin-bottom: 0; align-items: center"
-                    >
-                        <div class="float-group" style="width: 80px">
-                            <input
-                                type="number"
-                                id="inputDispOpacity"
-                                class="float-input"
-                                value="100"
-                                min="0"
-                                max="100"
-                                oninput="syncOpacity('disp', 'input')"
-                            />
-                            <label class="float-label">Reliëf %</label>
-                        </div>
-                        <div style="flex: 1; padding-top: 14px">
-                            <input
-                                type="range"
-                                id="sliderDispOpacity"
-                                min="0"
-                                max="100"
-                                value="100"
-                                step="1"
-                                style="width: 100%; cursor: pointer"
-                                oninput="syncOpacity('disp', 'slider')"
-                            />
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="panel col-panel" id="col-right">
-                <div id="input-sectie-ondergrond">
-                    <div class="section-header">
-                        <h3 class="simple-title">Ondergrondkenmerken</h3>
-                        <div class="header-controls">
-                            <button
-                                class="header-btn remove"
-                                onclick="verwijderLaag('ondergrond-container')"
-                            >
-                                -
-                            </button>
-                            <button
-                                class="header-btn add"
-                                onclick="voegOndergrondKenmerkToe()"
-                            >
-                                +
-                            </button>
-                        </div>
-                    </div>
-                    <div id="ondergrond-container"></div>
-                </div>
-                <div id="input-sectie-stab" style="display: none">
-                    <div class="section-header">
-                        <h3 class="simple-title">Stabiliteitswortels</h3>
-                        <div class="header-controls">
-                            <button
-                                class="header-btn remove"
-                                onclick="verwijderLaag('stab-container')"
-                            >
-                                -
-                            </button>
-                            <button
-                                class="header-btn add"
-                                onclick="voegStabLaagToe()"
-                            >
-                                +
-                            </button>
-                        </div>
-                    </div>
-                    <div id="stab-container"></div>
-                </div>
-            </div>
-
             <div class="panel col-panel" id="col-data">
                 <h3 class="simple-title">Projectgegevens (Globaal)</h3>
                 <div class="input-card" style="border-left: 4px solid #000">
@@ -686,6 +392,305 @@
                 </div>
             </div>
         </div>
+
+            <div class="panel col-panel" id="col-left">
+                <div id="input-sectie-bodem">
+                    <div class="section-header">
+                        <h3 class="simple-title">Bodemkenmerken</h3>
+                        <div class="header-controls">
+                            <button
+                                class="header-btn remove"
+                                onclick="verwijderLaag('bodem-container')"
+                            >
+                                -
+                            </button>
+                            <button
+                                class="header-btn add"
+                                onclick="voegBodemLaagToe()"
+                            >
+                                +
+                            </button>
+                        </div>
+                    </div>
+                    <div id="bodem-container"></div>
+                    <div class="field-photo-panel field-only" id="photos-fysisch-panel">
+                        <div class="field-photo-header">
+                            <strong>📷 Foto’s fysisch</strong>
+                            <button class="tb-btn" onclick="triggerFieldPhotoUpload('fysisch')">+ Foto maken/toevoegen</button>
+                        </div>
+                        <div class="field-photo-grid" id="photos-fysisch-grid"></div>
+                        <div class="field-photo-note">Maximaal 4 foto's. Foto’s worden verkleind opgeslagen in het projectbestand.</div>
+                    </div>
+                </div>
+                <div id="input-sectie-opname" style="display: none">
+                    <div class="section-header">
+                        <h3 class="simple-title">Opnamewortels</h3>
+                        <div class="header-controls">
+                            <button
+                                class="header-btn remove"
+                                onclick="verwijderLaag('opname-container')"
+                            >
+                                -
+                            </button>
+                            <button
+                                class="header-btn add"
+                                onclick="voegOpnameLaagToe()"
+                            >
+                                +
+                            </button>
+                        </div>
+                    </div>
+                    <div id="opname-container"></div>
+                    <div class="field-photo-panel field-only" id="photos-beworteling-panel">
+                        <div class="field-photo-header">
+                            <strong>📷 Foto’s wortelontwikkeling</strong>
+                            <button class="tb-btn" onclick="triggerFieldPhotoUpload('beworteling')">+ Foto maken/toevoegen</button>
+                        </div>
+                        <div class="field-photo-grid" id="photos-beworteling-grid"></div>
+                        <div class="field-photo-note">Maximaal 4 foto's. Foto’s worden verkleind opgeslagen in het projectbestand.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel col-vis" id="col-vis">
+                <div class="vis-scroll-container">
+                    <div id="vis-fysisch-wrapper" class="vis-container-wrapper">
+                        <div id="vis-header-fysisch" class="vis-header-title">
+                            Fysisch
+                        </div>
+                        <div id="view-fysisch" class="profile-container">
+                            <div
+                                class="vis-column col-text-bodem vis-fysisch-dims"
+                                id="vis-text-bodem"
+                            ></div>
+                            <div
+                                class="vis-column col-bar-bodem vis-fysisch-dims"
+                                id="vis-bar-bodem"
+                            ></div>
+                            <div
+                                class="vis-column col-bar-bodem-spacer vis-fysisch-dims"
+                            ></div>
+                            <div
+                                class="vis-column col-strip-ondergrond vis-fysisch-dims"
+                                id="vis-strip-ondergrond"
+                            ></div>
+                            <div
+                                class="vis-column col-text-ondergrond vis-fysisch-dims"
+                                id="vis-text-ondergrond"
+                            ></div>
+                        </div>
+                    </div>
+                    <div
+                        id="vis-beworteling-wrapper"
+                        class="vis-container-wrapper"
+                        style="display: none"
+                    >
+                        <div id="vis-header-root" class="vis-header-title">
+                            Wortelontwikkeling
+                        </div>
+                        <div id="view-beworteling" class="profile-container">
+                            <div
+                                class="vis-column col-text-root-left vis-beworteling-dims"
+                                id="vis-root-text-left"
+                            ></div>
+                            <div
+                                class="vis-column col-bar-root-left vis-beworteling-dims"
+                                id="vis-root-bar-left"
+                            ></div>
+                            <div
+                                class="vis-column col-bar-root-spacer vis-beworteling-dims"
+                            ></div>
+                            <div
+                                class="vis-column col-bar-root-right vis-beworteling-dims"
+                                id="vis-root-bar-right"
+                            ></div>
+                            <div
+                                class="vis-column col-text-root-right vis-beworteling-dims"
+                                id="vis-root-text-right"
+                            ></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div
+                    style="
+                        padding: 10px;
+                        border-top: 1px solid #eee;
+                        margin-top: auto;
+                        display: flex;
+                        flex-direction: column;
+                        gap: 10px;
+                    "
+                >
+                    <div class="visual-settings-note">
+                        Weergave-instellingen: deze waarden veranderen alleen hoe de profieltekening wordt getoond en geëxporteerd. De onderzoeksdiepte staat bij Profielgegevens.
+                    </div>
+                    <div
+                        class="row"
+                        style="margin-bottom: 0; align-items: center"
+                    >
+                        <div class="float-group" style="width: 80px">
+                            <input
+                                type="number"
+                                id="inputHoogte"
+                                class="float-input"
+                                value="350"
+                                min="200"
+                                max="1500"
+                                oninput="syncHoogte('input')"
+                            />
+                            <label class="float-label">Hoogte (px)</label>
+                        </div>
+                        <div style="flex: 1; padding-top: 14px">
+                            <input
+                                type="range"
+                                id="sliderHoogte"
+                                min="200"
+                                max="1500"
+                                value="350"
+                                step="10"
+                                style="width: 100%; cursor: pointer"
+                                oninput="syncHoogte('slider')"
+                            />
+                        </div>
+                    </div>
+
+                    <div
+                        class="row"
+                        style="margin-bottom: 0; align-items: center"
+                    >
+                        <div class="float-group" style="width: 80px">
+                            <input
+                                type="number"
+                                id="inputBreedte"
+                                class="float-input"
+                                value="120"
+                                min="80"
+                                max="500"
+                                oninput="syncBreedte('input')"
+                            />
+                            <label class="float-label">Breedte (px)</label>
+                        </div>
+                        <div style="flex: 1; padding-top: 14px">
+                            <input
+                                type="range"
+                                id="sliderBreedte"
+                                min="80"
+                                max="500"
+                                value="120"
+                                step="10"
+                                style="width: 100%; cursor: pointer"
+                                oninput="syncBreedte('slider')"
+                            />
+                        </div>
+                    </div>
+
+                    <div
+                        class="row"
+                        style="margin-bottom: 0; align-items: center"
+                    >
+                        <div class="float-group" style="width: 80px">
+                            <input
+                                type="number"
+                                id="inputAoOpacity"
+                                class="float-input"
+                                value="100"
+                                min="0"
+                                max="100"
+                                oninput="syncOpacity('ao', 'input')"
+                            />
+                            <label class="float-label">Schaduw %</label>
+                        </div>
+                        <div style="flex: 1; padding-top: 14px">
+                            <input
+                                type="range"
+                                id="sliderAoOpacity"
+                                min="0"
+                                max="100"
+                                value="100"
+                                step="1"
+                                style="width: 100%; cursor: pointer"
+                                oninput="syncOpacity('ao', 'slider')"
+                            />
+                        </div>
+                    </div>
+
+                    <div
+                        class="row"
+                        style="margin-bottom: 0; align-items: center"
+                    >
+                        <div class="float-group" style="width: 80px">
+                            <input
+                                type="number"
+                                id="inputDispOpacity"
+                                class="float-input"
+                                value="100"
+                                min="0"
+                                max="100"
+                                oninput="syncOpacity('disp', 'input')"
+                            />
+                            <label class="float-label">Reliëf %</label>
+                        </div>
+                        <div style="flex: 1; padding-top: 14px">
+                            <input
+                                type="range"
+                                id="sliderDispOpacity"
+                                min="0"
+                                max="100"
+                                value="100"
+                                step="1"
+                                style="width: 100%; cursor: pointer"
+                                oninput="syncOpacity('disp', 'slider')"
+                            />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel col-panel" id="col-right">
+                <div id="input-sectie-ondergrond">
+                    <div class="section-header">
+                        <h3 class="simple-title">Ondergrondkenmerken</h3>
+                        <div class="header-controls">
+                            <button
+                                class="header-btn remove"
+                                onclick="verwijderLaag('ondergrond-container')"
+                            >
+                                -
+                            </button>
+                            <button
+                                class="header-btn add"
+                                onclick="voegOndergrondKenmerkToe()"
+                            >
+                                +
+                            </button>
+                        </div>
+                    </div>
+                    <div id="ondergrond-container"></div>
+                </div>
+                <div id="input-sectie-stab" style="display: none">
+                    <div class="section-header">
+                        <h3 class="simple-title">Stabiliteitswortels</h3>
+                        <div class="header-controls">
+                            <button
+                                class="header-btn remove"
+                                onclick="verwijderLaag('stab-container')"
+                            >
+                                -
+                            </button>
+                            <button
+                                class="header-btn add"
+                                onclick="voegStabLaagToe()"
+                            >
+                                +
+                            </button>
+                        </div>
+                    </div>
+                    <div id="stab-container"></div>
+                </div>
+            </div>
+
+
 
         <input
             type="file"
