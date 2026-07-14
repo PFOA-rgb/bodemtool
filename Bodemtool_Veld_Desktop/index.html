@@ -413,14 +413,6 @@
                         </div>
                     </div>
                     <div id="bodem-container"></div>
-                    <div class="field-photo-panel field-only" id="photos-fysisch-panel">
-                        <div class="field-photo-header">
-                            <strong>📷 Foto’s fysisch</strong>
-                            <button class="tb-btn" onclick="triggerFieldPhotoUpload('fysisch')">+ Foto maken/toevoegen</button>
-                        </div>
-                        <div class="field-photo-grid" id="photos-fysisch-grid"></div>
-                        <div class="field-photo-note">Maximaal 4 foto's. Foto’s worden verkleind opgeslagen in het projectbestand.</div>
-                    </div>
                 </div>
                 <div id="input-sectie-opname" style="display: none">
                     <div class="section-header">
@@ -441,14 +433,6 @@
                         </div>
                     </div>
                     <div id="opname-container"></div>
-                    <div class="field-photo-panel field-only" id="photos-beworteling-panel">
-                        <div class="field-photo-header">
-                            <strong>📷 Foto’s wortelontwikkeling</strong>
-                            <button class="tb-btn" onclick="triggerFieldPhotoUpload('beworteling')">+ Foto maken/toevoegen</button>
-                        </div>
-                        <div class="field-photo-grid" id="photos-beworteling-grid"></div>
-                        <div class="field-photo-note">Maximaal 4 foto's. Foto’s worden verkleind opgeslagen in het projectbestand.</div>
-                    </div>
                 </div>
             </div>
 
@@ -534,7 +518,7 @@
                                 type="number"
                                 id="inputHoogte"
                                 class="float-input"
-                                value="350"
+                                value="380"
                                 min="200"
                                 max="1500"
                                 oninput="syncHoogte('input')"
@@ -547,7 +531,7 @@
                                 id="sliderHoogte"
                                 min="200"
                                 max="1500"
-                                value="350"
+                                value="380"
                                 step="10"
                                 style="width: 100%; cursor: pointer"
                                 oninput="syncHoogte('slider')"
@@ -687,6 +671,26 @@
                         </div>
                     </div>
                     <div id="stab-container"></div>
+                </div>
+            </div>
+
+            <div class="panel col-panel field-only" id="col-photos">
+                <h3 class="simple-title">Foto’s</h3>
+                <div class="field-photo-panel" id="photos-fysisch-panel">
+                    <div class="field-photo-header">
+                        <strong>📷 Foto’s fysisch</strong>
+                        <button class="tb-btn" onclick="triggerFieldPhotoUpload('fysisch')">+ Foto maken/toevoegen</button>
+                    </div>
+                    <div class="field-photo-grid" id="photos-fysisch-grid"></div>
+                    <div class="field-photo-note">Maximaal 4 foto's. Foto’s worden verkleind opgeslagen in het projectbestand.</div>
+                </div>
+                <div class="field-photo-panel" id="photos-beworteling-panel">
+                    <div class="field-photo-header">
+                        <strong>📷 Foto’s wortelontwikkeling</strong>
+                        <button class="tb-btn" onclick="triggerFieldPhotoUpload('beworteling')">+ Foto maken/toevoegen</button>
+                    </div>
+                    <div class="field-photo-grid" id="photos-beworteling-grid"></div>
+                    <div class="field-photo-note">Maximaal 4 foto's. Foto’s worden verkleind opgeslagen in het projectbestand.</div>
                 </div>
             </div>
         </div>

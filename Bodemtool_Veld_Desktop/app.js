@@ -3,8 +3,8 @@
 // ==========================================
 
 // --- 1. CONFIGURATIE ---
-let PX_TEXT_H = 352;
-let PX_BAR_H = 350;
+let PX_TEXT_H = 382;
+let PX_BAR_H = 380;
 
 window.currentGPO = 1;
 window.projectData = {};
@@ -2773,7 +2773,7 @@ function syncHoogte(bron) {
     bron === "slider"
       ? document.getElementById("sliderHoogte").value
       : document.getElementById("inputHoogte").value;
-  val = parseInt(val) || 350;
+  val = parseInt(val) || 380;
 
   if (bron === "slider") document.getElementById("inputHoogte").value = val;
   if (bron === "input") document.getElementById("sliderHoogte").value = val;

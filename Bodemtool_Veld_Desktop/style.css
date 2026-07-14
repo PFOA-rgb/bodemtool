@@ -352,9 +352,11 @@ body.field-mode #dashboard-container {
 body.field-mode #col-data { order: 1; }
 body.field-mode #col-left { order: 2; }
 body.field-mode #col-right { order: 3; }
+body.field-mode #col-photos { order: 4; }
 body.field-mode #col-vis { display: none !important; }
 body.field-mode #col-left,
 body.field-mode #col-right,
+body.field-mode #col-photos,
 body.field-mode #col-data {
     flex: 0 0 auto;
     width: 100%;
