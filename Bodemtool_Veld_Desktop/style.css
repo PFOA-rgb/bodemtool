@@ -68,10 +68,10 @@ body {
 }
 
 /* SPECIFIEKE KOLOM BREEDTES */
-#col-vis  { order: 1; flex: 0 0 720px; width: 720px; min-width: 720px; padding: 0; background: transparent; border: none; overflow: hidden; } 
-#col-data { order: 2; width: 480px; min-width: 480px; }
-#col-left { order: 3; width: 480px; min-width: 480px; } 
-#col-right { order: 4; width: 400px; min-width: 400px; } 
+#col-data { order: 1; width: 480px; min-width: 480px; }
+#col-left { order: 2; width: 480px; min-width: 480px; } 
+#col-right { order: 3; width: 400px; min-width: 400px; } 
+#col-vis  { order: 4; flex: 0 0 820px; width: 820px; min-width: 820px; padding: 0; background: transparent; border: none; overflow: hidden; } 
 
 /* Sections binnen panelen */
 #input-sectie-bodem, #input-sectie-opname, #input-sectie-ondergrond, #input-sectie-stab { 
@@ -113,7 +113,7 @@ input[type="color"] { width: 100%; height: 18px; border: 1px solid #999; padding
 /* --- VISUALISATIE --- */
 .vis-container-wrapper { 
     width: 100%;
-    min-width: 620px;
+    min-width: 760px;
     height: 380px; 
     background-color: #fff; 
     border: none; 
@@ -431,7 +431,7 @@ body.field-mode .col-grid[data-cols="3"] { grid-template-columns: 1fr; }
    #col-left { width: 420px; min-width: 420px; }
    #col-right { width: 360px; min-width: 360px; }
    #col-data { width: 420px; min-width: 420px; }
-   #col-vis { flex: 0 0 620px; width: 620px; min-width: 620px; }
+   #col-vis { flex: 0 0 820px; width: 820px; min-width: 820px; }
    .vis-scroll-container { justify-content: flex-start; -webkit-overflow-scrolling: touch; }
 }
 
