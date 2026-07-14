@@ -428,6 +428,29 @@
                         class="row"
                         style="margin-bottom: 0; align-items: center"
                     >
+                        <label
+                            style="
+                                display: flex;
+                                align-items: center;
+                                gap: 10px;
+                                font-size: 13px;
+                                font-weight: 600;
+                                cursor: pointer;
+                            "
+                        >
+                            <input
+                                type="checkbox"
+                                id="inputVerloop"
+                                onchange="updateGlobalGradient()"
+                            />
+                            Verloop tussen bodemlagen
+                        </label>
+                    </div>
+
+                    <div
+                        class="row"
+                        style="margin-bottom: 0; align-items: center"
+                    >
                         <div class="float-group" style="width: 80px">
                             <input
                                 type="number"

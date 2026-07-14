@@ -19,6 +19,7 @@ window.globalSettings = {
   showHeader: false,
   headers: { fysisch: "Fysisch", beworteling: "Wortelontwikkeling" },
   pattern: "Geen",
+  gradient: false,
   project: "",
   locatie: "",
   opdrachtgever: "",
@@ -289,9 +290,7 @@ function valideerDieptes(id, cls) {
 // 1. Zorgt alleen nog voor de hoofdkleur en CSS patronen
 function getBodemBgStyle(c, i, arr) {
   const eigenKleur = c.querySelector(".inp-kleur").value;
-  const heeftVerloop = c.querySelector(".inp-grad")
-    ? c.querySelector(".inp-grad").checked
-    : false;
+  const heeftVerloop = getGlobalGradient();
   const textuur = getGlobalPattern();
 
   let bgKleur = eigenKleur;
@@ -363,7 +362,6 @@ function voegBodemLaagToe(d = null) {
 
   const div = document.createElement("div");
   div.className = "input-card card-bodem";
-  const isGrad = d?.g ? "checked" : "";
   const offset = d?.off || 0;
   const defKleur = d?.k || "#f3e5ab";
 
@@ -379,13 +377,7 @@ function voegBodemLaagToe(d = null) {
         <div style="flex:1;" class="compact-color-wrapper">
             <div class="tiny-label">Kleur</div>
             <div class="mini-palette" style="margin-top:0; margin-bottom:3px;">${paletteHtml}</div>
-            <div style="display:flex; gap:5px; align-items:center;">
-                <input type="color" class="inp-kleur" value="${defKleur}" onchange="updateUI()" style="flex:1;">
-                <div style="display:flex; flex-direction:column; align-items:center; margin-left:2px;">
-                    <input type="checkbox" class="inp-grad" ${isGrad} onchange="updateUI()" style="width:14px; height:14px; margin:0;">
-                    <div class="tiny-label" style="font-size:9px;">Verloop</div>
-                </div>
-            </div>
+            <input type="color" class="inp-kleur" value="${defKleur}" onchange="updateUI()" style="width:100%;">
         </div>
     </div>
     <div class="row">
@@ -761,6 +753,19 @@ function updateGlobalMeta() {
 
 function getGlobalPattern() {
   return window.globalSettings.pattern || "Geen";
+}
+
+function getGlobalGradient() {
+  return Boolean(window.globalSettings.gradient);
+}
+
+function updateGlobalGradient() {
+  window.globalSettings.gradient = Boolean(document.getElementById("inputVerloop")?.checked);
+  window.hasUnsavedChanges = true;
+  updateUI();
+  updateRootUI();
+  if (document.getElementById("collage-view").style.display !== "none")
+    updateCollageUI();
 }
 
 function updateGlobalPattern() {
@@ -1789,7 +1794,6 @@ function slaHuidigProfielOpInGeheugen() {
       f: getVal(c, ".inp-frac", ".inp-frac-custom"),
       h: getVal(c, ".inp-humus", ".inp-humus-custom"),
       k: getSafeVal(c, ".inp-kleur"),
-      g: c.querySelector(".inp-grad")?.checked || false,
       off: getSafeVal(c, ".inp-offset"),
     });
   });
@@ -1866,6 +1870,8 @@ function herstelMetaGegevens() {
   setVal("meta-opdrachtgever", window.globalSettings.opdrachtgever || "");
   setVal("meta-onderzoeker", window.globalSettings.onderzoeker || "");
   setVal("inputPatroon", getGlobalPattern());
+  const verloopInput = document.getElementById("inputVerloop");
+  if (verloopInput) verloopInput.checked = getGlobalGradient();
   document.getElementById("toggle-header").checked =
     window.globalSettings.showHeader;
 }
@@ -2033,6 +2039,7 @@ function laadProject(event) {
           showHeader: false,
           headers: { fysisch: "Fysisch", beworteling: "Wortelontwikkeling" },
           pattern: "Geen",
+          gradient: false,
           project: "",
           locatie: "",
           opdrachtgever: "",
@@ -2045,6 +2052,7 @@ function laadProject(event) {
           showHeader: false,
           headers: { fysisch: "Fysisch", beworteling: "Wortelontwikkeling" },
           pattern: "Geen",
+          gradient: false,
           project: "",
           locatie: "",
           opdrachtgever: "",
