@@ -10,84 +10,80 @@
     </head>
     <body>
         <div id="top-menu-bar">
-            <div class="top-nav-group">
-                <button
-                    id="nav-fysisch"
-                    class="top-nav-btn active"
-                    onclick="wisselTab('fysisch')"
+            <div class="topbar-row topbar-gpo-row">
+                <div class="gpo-tabs-container" id="gpo-tabs-wrapper"></div>
+                <span
+                    id="gpo-status"
+                    style="
+                        font-size: 12px;
+                        font-weight: 600;
+                        color: #555;
+                        margin-left: 10px;
+                    "
+                    >GPO #1</span
                 >
-                    Fysisch
+                <button
+                    class="tb-btn"
+                    onclick="dupliceerNaarVolgendeGPO()"
+                    title="Kopieer huidige GPO naar de volgende GPO"
+                >
+                    Dupliceer GPO →
                 </button>
                 <button
-                    id="nav-beworteling"
-                    class="top-nav-btn"
-                    onclick="wisselTab('beworteling')"
+                    id="field-mode-toggle"
+                    class="tb-btn"
+                    onclick="toggleFieldMode()"
+                    title="Schakel tablet-/veldmodus in of uit"
+                    aria-pressed="false"
                 >
-                    Wortelontwikkeling
+                    Veldmodus
                 </button>
-                <button
-                    id="nav-collage"
-                    class="top-nav-btn"
-                    onclick="wisselTab('collage')"
-                    style="color: #2e7d32; font-weight: bold"
-                >
-                    Overzicht & Export
-                </button>
+                <div style="flex: 1"></div>
+                <div class="file-actions">
+                    <label class="tb-btn"
+                        >Project laden
+                        <input
+                            type="file"
+                            id="file-input"
+                            accept=".json"
+                            onchange="laadProject(event)"
+                            style="display: none"
+                    /></label>
+                    <button class="tb-btn" onclick="slaOpProject()">Project opslaan</button>
+                </div>
             </div>
-            <div
-                style="
-                    width: 1px;
-                    height: 20px;
-                    background: #e0e0e0;
-                    margin: 0 10px;
-                "
-            ></div>
-            <div class="gpo-tabs-container" id="gpo-tabs-wrapper"></div>
-            <span
-                id="gpo-status"
-                style="
-                    font-size: 12px;
-                    font-weight: 600;
-                    color: #555;
-                    margin-left: 10px;
-                "
-                >GPO #1</span
-            >
-            <button
-                class="tb-btn"
-                onclick="dupliceerNaarVolgendeGPO()"
-                title="Kopieer huidige GPO naar de volgende GPO"
-            >
-                Dupliceer GPO →
-            </button>
-            <button
-                id="field-mode-toggle"
-                class="tb-btn"
-                onclick="toggleFieldMode()"
-                title="Schakel tablet-/veldmodus in of uit"
-                aria-pressed="false"
-            >
-                Veldmodus
-            </button>
-            <div style="flex: 1"></div>
-            <div class="file-actions">
-                <label class="tb-btn"
-                    >Project laden
-                    <input
-                        type="file"
-                        id="file-input"
-                        accept=".json"
-                        onchange="laadProject(event)"
-                        style="display: none"
-                /></label>
-                <button class="tb-btn" onclick="slaOpProject()">Project opslaan</button>
+            <div class="topbar-row topbar-main-nav-row">
+                <div class="top-nav-group">
+                    <button
+                        id="nav-fysisch"
+                        class="top-nav-btn active"
+                        onclick="wisselTab('fysisch')"
+                    >
+                        Fysisch
+                    </button>
+                    <button
+                        id="nav-beworteling"
+                        class="top-nav-btn"
+                        onclick="wisselTab('beworteling')"
+                    >
+                        Wortelontwikkeling
+                    </button>
+                    <button
+                        id="nav-collage"
+                        class="top-nav-btn desktop-only"
+                        onclick="wisselTab('collage')"
+                        style="color: #2e7d32; font-weight: bold"
+                    >
+                        Rapportage & Export
+                    </button>
+                </div>
             </div>
         </div>
 
         <div id="field-mode-banner" class="field-mode-banner field-only">
             <strong>Veldmodus actief.</strong>
             Vul in het veld de GPO-gegevens in, voeg foto’s toe en gebruik <strong>Project opslaan</strong> voordat je de browser sluit.
-            Gebruik later op desktop <strong>Overzicht & Export</strong> voor het rapportagepakket.
+            Gebruik later op desktop <strong>Rapportage & Export</strong> voor het rapportagepakket.
         </div>
 
         <div id="dashboard-container">
@@ -727,7 +723,7 @@
             <div class="collage-header-card">
                 <div>
                     <h1 style="margin: 0; font-size: 20px">
-                        Overzicht & Export
+                        Rapportage & Export
                     </h1>
                     <p style="margin: 5px 0 0 0; font-size: 13px; color: #666">
                         Hieronder worden automatisch de afbeeldingen van

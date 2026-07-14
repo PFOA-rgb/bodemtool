@@ -17,16 +17,18 @@ body {
 }
 
 /* --- TOPBAR --- */
-#top-menu-bar { 
-    background-color: #ffffff; 
-    padding: 0 10px; 
-    display: flex; 
-    gap: 10px; 
-    align-items: center; 
-    flex-shrink: 0; 
-    border-bottom: 1px solid #e0e0e0; 
-    height: 40px; 
+#top-menu-bar {
+    background-color: #ffffff;
+    padding: 6px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex-shrink: 0;
+    border-bottom: 1px solid #e0e0e0;
 }
+.topbar-row { display: flex; align-items: center; gap: 10px; width: 100%; }
+.topbar-gpo-row { min-height: 30px; }
+.topbar-main-nav-row { justify-content: flex-start; }
 .top-nav-group { display: flex; background: #f0f0f0; padding: 2px; border-radius: 4px; gap: 2px; }
 .top-nav-btn { border: none; background: transparent; padding: 4px 12px; font-size: 13px; font-weight: 500; color: #555; cursor: pointer; border-radius: 3px; transition: all 0.2s; }
 .top-nav-btn:hover { background: #e0e0e0; color: #000; }
@@ -337,8 +339,11 @@ body.field-mode {
 body.field-mode #top-menu-bar {
     height: auto;
     min-height: 48px;
-    flex-wrap: wrap;
     padding: 6px 8px;
+    gap: 6px;
+}
+body.field-mode .topbar-row {
+    flex-wrap: wrap;
     gap: 6px;
 }
 body.field-mode #dashboard-container {

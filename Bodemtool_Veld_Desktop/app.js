@@ -154,6 +154,10 @@ function applyFieldMode(enabled) {
     btn.setAttribute("aria-pressed", enabled ? "true" : "false");
     btn.innerText = enabled ? "Veldmodus aan" : "Veldmodus";
   }
+
+  if (enabled && document.getElementById("nav-collage")?.classList.contains("active")) {
+    wisselTab("fysisch");
+  }
 }
 
 function initFieldMode() {
