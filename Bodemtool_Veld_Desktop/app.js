@@ -28,17 +28,39 @@ window.globalSettings = {
 
 // Kleuren en Data Definities
 const BODEM_KLEUREN = {
-  Zand: "#E6C77A",
-  "Lemig zand": "#C9A66B",
-  "Lichte klei": "#B88A5A",
-  "Zware klei": "#7A4E2D",
+  Zand: "#C9A96E",
+  "Lemig zand": "#B8945F",
+  "Lichte klei": "#8EA1A6",
+  "Zware klei": "#73868B",
   Veen: "#3B2A1F",
   Löss: "#E8D8A8",
-  Bomenzand: "#6B4A34",
-  Bomengrond: "#5A3E2B",
-  Elementverharding: "#A94438",
+  Bomenzand: "#6F5639",
+  Bomengrond: "#3F3023",
+  Elementverharding: "#8F8F8F",
   Halfverharding: "#9E9E9E",
-  Menggranulaat: "#8C8C8C",
+  Menggranulaat: "#A65A4A",
+};
+
+const MUNSELL_ZAND_KLEUREN = {
+  Humusloos: "#D8C79A",
+  Humusarm: "#C9A96E",
+  "Matig humeus": "#9A7A52",
+  Humeus: "#6F5639",
+  Humusrijk: "#3F3023",
+};
+const MUNSELL_KLEI_KLEUREN = {
+  Humusloos: "#8EA1A6",
+  Humusarm: "#7C8A8C",
+  "Matig humeus": "#6E7068",
+  Humeus: "#55544B",
+  Humusrijk: "#3B382F",
+};
+const BODEM_TYPE_COMBINATIES = {
+  Bomenzand: { f: "Matig grof", h: "Humeus" },
+  Bomengrond: { f: "Matig grof", h: "Humusrijk" },
+  Elementverharding: { f: "N.v.t.", h: "N.v.t.", k: "#8F8F8F" },
+  Halfverharding: { f: "N.v.t.", h: "N.v.t.", k: "#9E9E9E" },
+  Menggranulaat: { f: "N.v.t.", h: "N.v.t.", k: "#A65A4A" },
 };
 const BASE_COLORS = [
   "#1A1A1A",
@@ -253,6 +275,47 @@ window.getVal = function (parent, sel1, sel2) {
   return el.value === "CUSTOM" ? parent.querySelector(sel2).value : el.value;
 };
 
+function setSelectOrCustom(card, selectSelector, customSelector, value, knownValues) {
+  const select = card.querySelector(selectSelector);
+  const custom = card.querySelector(customSelector);
+  if (!select) return;
+  if (knownValues.includes(value)) {
+    select.value = value;
+    if (custom) custom.style.display = "none";
+  } else {
+    select.value = "CUSTOM";
+    if (custom) {
+      custom.value = value;
+      custom.style.display = "block";
+    }
+  }
+}
+
+function getMunsellSoilColor(type, humus) {
+  if (["Zand", "Lemig zand", "Bomenzand", "Bomengrond"].includes(type)) {
+    return MUNSELL_ZAND_KLEUREN[humus] || BODEM_KLEUREN[type];
+  }
+  if (["Lichte klei", "Zware klei"].includes(type)) {
+    return MUNSELL_KLEI_KLEUREN[humus] || BODEM_KLEUREN[type];
+  }
+  return BODEM_KLEUREN[type];
+}
+
+function applyBodemTypeCombination(card, changedClass) {
+  const type = getVal(card, ".inp-type", ".inp-type-custom");
+  if (!type || type === "CUSTOM") return;
+
+  const preset = BODEM_TYPE_COMBINATIES[type];
+  if (preset && changedClass === "inp-type") {
+    setSelectOrCustom(card, ".inp-frac", ".inp-frac-custom", preset.f, DATA_FRACTIES);
+    setSelectOrCustom(card, ".inp-humus", ".inp-humus-custom", preset.h, DATA_HUMUS);
+  }
+
+  const humus = preset?.h || getVal(card, ".inp-humus", ".inp-humus-custom");
+  const kleur = preset?.k || getMunsellSoilColor(type, humus);
+  if (kleur) card.querySelector(".inp-kleur").value = kleur;
+}
+
 function verwijderLaag(containerId) {
   const container = document.getElementById(containerId);
   if (container.lastChild) container.lastChild.remove();
@@ -363,7 +426,9 @@ function voegBodemLaagToe(d = null) {
   const div = document.createElement("div");
   div.className = "input-card card-bodem";
   const offset = d?.off || 0;
-  const defKleur = d?.k || "#f3e5ab";
+  const defType = d?.t || "Zand";
+  const defHumus = d?.h || "Humusarm";
+  const defKleur = d?.k || getMunsellSoilColor(defType, defHumus) || "#f3e5ab";
 
   const paletteHtml = BASE_COLORS.map(
     (c) =>
@@ -382,7 +447,7 @@ function voegBodemLaagToe(d = null) {
     </div>
     <div class="row">
         <div style="flex:1" class="float-group">
-            <select class="float-input inp-type" onchange="handleSelectChange(this)">${optsWithCustom(DATA_BTYPES, d?.t || "Zand")}</select>
+            <select class="float-input inp-type" onchange="handleSelectChange(this)">${optsWithCustom(DATA_BTYPES, defType)}</select>
             <label class="float-label">Type</label>
             <input type="text" class="custom-input inp-type-custom" value="${d?.t || ""}" style="display:${d && !DATA_BTYPES.includes(d.t) ? "block" : "none"}" onkeyup="updateUI()">
         </div>
@@ -392,7 +457,7 @@ function voegBodemLaagToe(d = null) {
             <input type="text" class="custom-input inp-frac-custom" value="${d?.f || ""}" style="display:${d && !DATA_FRACTIES.includes(d.f) ? "block" : "none"}" onkeyup="updateUI()">
         </div>
         <div style="flex:1" class="float-group">
-            <select class="float-input inp-humus" onchange="handleSelectChange(this)">${optsWithCustom(DATA_HUMUS, d?.h || "Humusarm")}</select>
+            <select class="float-input inp-humus" onchange="handleSelectChange(this)">${optsWithCustom(DATA_HUMUS, defHumus)}</select>
             <label class="float-label">Org.</label>
             <input type="text" class="custom-input inp-humus-custom" value="${d?.h || ""}" style="display:${d && !DATA_HUMUS.includes(d.h) ? "block" : "none"}" onkeyup="updateUI()">
         </div>
@@ -644,11 +709,11 @@ function handleSelectChange(s) {
       ca.querySelector(".k-pat").value = pre.p;
     }
   }
-  if (s.classList.contains("inp-type")) {
-    const presetKleur = BODEM_KLEUREN[s.value];
-    if (presetKleur) {
-      s.closest(".input-card").querySelector(".inp-kleur").value = presetKleur;
-    }
+  if (s.classList.contains("inp-type") || s.classList.contains("inp-humus")) {
+    applyBodemTypeCombination(
+      s.closest(".input-card"),
+      s.classList.contains("inp-type") ? "inp-type" : "inp-humus",
+    );
   }
 
   if (s.closest(".card-opname") || s.closest(".card-stab")) {
@@ -1003,9 +1068,9 @@ function renderPhysicalGraph(wrapperId, barId, textId, stripId, txtOId) {
     const topT = s * scaleT;
     const hT = (Math.min(e, max) - s) * scaleT;
     const txt = [
+      getVal(c, ".inp-type", ".inp-type-custom"),
       getVal(c, ".inp-frac", ".inp-frac-custom"),
       getVal(c, ".inp-humus", ".inp-humus-custom"),
-      getVal(c, ".inp-type", ".inp-type-custom"),
     ]
       .filter((v) => v !== "N.v.t." && v !== "")
       .join(" | ");
