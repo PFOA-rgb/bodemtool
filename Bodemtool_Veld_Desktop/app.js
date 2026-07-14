@@ -382,6 +382,11 @@ function voegBodemLaagToe(d = null) {
     </div>
     <div class="row">
         <div style="flex:1" class="float-group">
+            <select class="float-input inp-type" onchange="handleSelectChange(this)">${optsWithCustom(DATA_BTYPES, d?.t || "Zand")}</select>
+            <label class="float-label">Type</label>
+            <input type="text" class="custom-input inp-type-custom" value="${d?.t || ""}" style="display:${d && !DATA_BTYPES.includes(d.t) ? "block" : "none"}" onkeyup="updateUI()">
+        </div>
+        <div style="flex:1" class="float-group">
             <select class="float-input inp-frac" onchange="handleSelectChange(this)">${optsWithCustom(DATA_FRACTIES, d?.f || "Fijn")}</select>
             <label class="float-label">Fractie</label>
             <input type="text" class="custom-input inp-frac-custom" value="${d?.f || ""}" style="display:${d && !DATA_FRACTIES.includes(d.f) ? "block" : "none"}" onkeyup="updateUI()">
@@ -390,11 +395,6 @@ function voegBodemLaagToe(d = null) {
             <select class="float-input inp-humus" onchange="handleSelectChange(this)">${optsWithCustom(DATA_HUMUS, d?.h || "Humusarm")}</select>
             <label class="float-label">Org.</label>
             <input type="text" class="custom-input inp-humus-custom" value="${d?.h || ""}" style="display:${d && !DATA_HUMUS.includes(d.h) ? "block" : "none"}" onkeyup="updateUI()">
-        </div>
-        <div style="flex:1" class="float-group">
-            <select class="float-input inp-type" onchange="handleSelectChange(this)">${optsWithCustom(DATA_BTYPES, d?.t || "Zand")}</select>
-            <label class="float-label">Type</label>
-            <input type="text" class="custom-input inp-type-custom" value="${d?.t || ""}" style="display:${d && !DATA_BTYPES.includes(d.t) ? "block" : "none"}" onkeyup="updateUI()">
         </div>
         <div class="desktop-only" style="display:flex; flex-direction:column; justify-content:center; margin-left:5px; gap:2px;">
             <button type="button" onclick="adjustOffset(this, -2)" style="width:20px; height:18px; font-size:10px; padding:0; cursor:pointer; background:#eee; border:1px solid #ccc; border-radius:3px;">▲</button>
