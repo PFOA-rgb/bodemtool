@@ -15,12 +15,13 @@ window.rootColorCache = {};
 window.hasUnsavedChanges = false;
 
 // Global settings
+const PROJECT_PREFIX = "PRPOA";
 window.globalSettings = {
   showHeader: false,
   headers: { fysisch: "Fysisch", beworteling: "Wortelontwikkeling" },
   pattern: "Geen",
   gradient: false,
-  project: "",
+  project: PROJECT_PREFIX,
   locatie: "",
   opdrachtgever: "",
   onderzoeker: "",
@@ -807,8 +808,18 @@ function updateHeaderFromInput() {
     document.getElementById("vis-header-fysisch").innerText = val;
   else document.getElementById("vis-header-root").innerText = val;
 }
+function enforceProjectPrefix() {
+  const input = document.getElementById("meta-project");
+  if (!input) return PROJECT_PREFIX;
+  const rest = input.value.startsWith(PROJECT_PREFIX)
+    ? input.value.slice(PROJECT_PREFIX.length)
+    : input.value.replace(/^PRPOA\s*/i, "");
+  input.value = PROJECT_PREFIX + rest;
+  return input.value;
+}
+
 function updateGlobalMeta() {
-  window.globalSettings.project = document.getElementById("meta-project").value;
+  window.globalSettings.project = enforceProjectPrefix();
   window.globalSettings.locatie = document.getElementById("meta-locatie").value;
   window.globalSettings.opdrachtgever =
     document.getElementById("meta-opdrachtgever").value;
@@ -1930,7 +1941,8 @@ function herstelMetaGegevens() {
     setVal("meta-wind", "noordzijde");
     setVal("meta-datum", "");
   }
-  setVal("meta-project", window.globalSettings.project || "");
+  setVal("meta-project", window.globalSettings.project || PROJECT_PREFIX);
+  window.globalSettings.project = enforceProjectPrefix();
   setVal("meta-locatie", window.globalSettings.locatie || "");
   setVal("meta-opdrachtgever", window.globalSettings.opdrachtgever || "");
   setVal("meta-onderzoeker", window.globalSettings.onderzoeker || "");
