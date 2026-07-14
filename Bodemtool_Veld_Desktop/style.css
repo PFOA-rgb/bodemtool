@@ -71,7 +71,7 @@ body {
 #col-data { order: 1; width: 480px; min-width: 480px; }
 #col-left { order: 2; width: 480px; min-width: 480px; } 
 #col-right { order: 3; width: 400px; min-width: 400px; } 
-#col-vis  { order: 4; flex: 0 0 820px; width: 820px; min-width: 820px; padding: 0; background: transparent; border: none; overflow: hidden; } 
+#col-vis  { order: 4; flex: 0 0 900px; width: 900px; min-width: 900px; padding: 0; background: transparent; border: none; overflow: hidden; }
 
 /* Sections binnen panelen */
 #input-sectie-bodem, #input-sectie-opname, #input-sectie-ondergrond, #input-sectie-stab { 
@@ -111,9 +111,9 @@ input[type="color"] { width: 100%; height: 18px; border: 1px solid #999; padding
 .mini-swatch:hover { transform: scale(1.2); border-color: #000; }
 
 /* --- VISUALISATIE --- */
-.vis-container-wrapper { 
-    width: 100%;
-    min-width: 760px;
+.vis-container-wrapper {
+    width: 900px;
+    min-width: 900px;
     height: 380px; 
     background-color: #fff; 
     border: none; 
@@ -290,6 +290,7 @@ textarea[readonly] {
 
 .field-only { display: none; }
 body.field-mode .field-only { display: block; }
+body.field-mode .desktop-only { display: none !important; }
 .field-photo-panel {
     margin-top: 12px;
     padding: 10px;
@@ -350,10 +351,9 @@ body.field-mode #dashboard-container {
 }
 body.field-mode #col-data { order: 1; }
 body.field-mode #col-left { order: 2; }
-body.field-mode #col-vis { order: 3; }
-body.field-mode #col-right { order: 4; }
+body.field-mode #col-right { order: 3; }
+body.field-mode #col-vis { display: none !important; }
 body.field-mode #col-left,
-body.field-mode #col-vis,
 body.field-mode #col-right,
 body.field-mode #col-data {
     flex: 0 0 auto;
@@ -382,7 +382,6 @@ body.field-mode input[type="color"] { min-height: 34px; }
 body.field-mode .float-input { min-height: 36px; font-size: 16px; }
 body.field-mode .manual-root::before { width: 44px; height: 44px; }
 body.field-mode .vis-scroll-container { max-width: 100%; overflow: auto; justify-content: flex-start; }
-body.field-mode .vis-container-wrapper { min-width: max-content; }
 body.field-mode .collage-layout { padding: 10px; }
 body.field-mode .collage-header-card { align-items: flex-start; }
 body.field-mode .collage-options { flex-wrap: wrap; }
@@ -431,7 +430,7 @@ body.field-mode .col-grid[data-cols="3"] { grid-template-columns: 1fr; }
    #col-left { width: 420px; min-width: 420px; }
    #col-right { width: 360px; min-width: 360px; }
    #col-data { width: 420px; min-width: 420px; }
-   #col-vis { flex: 0 0 820px; width: 820px; min-width: 820px; }
+   #col-vis { flex: 0 0 900px; width: 900px; min-width: 900px; }
    .vis-scroll-container { justify-content: flex-start; -webkit-overflow-scrolling: touch; }
 }
 
