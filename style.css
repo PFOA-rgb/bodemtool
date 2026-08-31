@@ -178,6 +178,81 @@ input[type="color"] { width: 100%; height: 18px; border: 1px solid #999; padding
 .col-text-root-right { width: 120px; min-width: 120px; height: auto; border-left: 2px solid #000; }
 .cirkel-fix { background-repeat: no-repeat !important; background-position: center !important; background-size: 20px 20px !important; z-index: 100 !important; }
 
+/* --- DESKTOP VELDFOTO'S --- */
+.photo-manager-view {
+    flex: 1;
+    flex-direction: column;
+    gap: 16px;
+    padding: 20px;
+    background: #f3f4f6;
+    overflow-y: auto;
+}
+.photo-manager-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    background: #fff;
+    border-radius: 8px;
+    padding: 16px 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+.photo-manager-header h1 { margin: 0; font-size: 20px; }
+.photo-manager-header p { margin: 5px 0 0; color: #666; font-size: 13px; }
+.photo-manager-add-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.desktop-photo-summary { font-size: 13px; color: #555; }
+.desktop-photo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+}
+.desktop-photo-empty {
+    grid-column: 1 / -1;
+    background: #fff;
+    border: 1px dashed #bbb;
+    border-radius: 8px;
+    padding: 36px;
+    text-align: center;
+    color: #666;
+}
+.desktop-photo-card {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+}
+.desktop-photo-card .field-photo-preview { margin: 0; }
+.desktop-photo-category {
+    align-self: flex-start;
+    background: #e8f3e9;
+    color: #245f29;
+    border-radius: 999px;
+    padding: 3px 8px;
+    font-size: 11px;
+    font-weight: 700;
+}
+.desktop-photo-name {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid #bbb;
+    border-radius: 4px;
+    padding: 7px 8px;
+    font: inherit;
+}
+.desktop-photo-selections { display: flex; gap: 12px; flex-wrap: wrap; }
+.desktop-photo-selections label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+}
+.desktop-photo-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.desktop-photo-actions .action-btn { flex: 1; min-width: 72px; }
+
 /* --- COLLAGE TOOL INTEGRATIE --- */
 
 /* Wrapper die het hele scherm overneemt */
@@ -374,6 +449,7 @@ body.field-mode #top-menu-bar {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 body.field-mode #nav-collage { display: none; }
+body.field-mode #nav-photos { display: none; }
 body.field-mode .file-actions { flex-wrap: wrap; margin-left: auto; }
 body.field-mode #export-project-btn {
     background: #2e7d32;

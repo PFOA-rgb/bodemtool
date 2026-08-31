@@ -164,7 +164,8 @@ function applyFieldMode(enabled) {
     loadLabel.textContent = enabled ? "Project laden" : "Laden";
   if (
     enabled &&
-    document.getElementById("nav-collage")?.classList.contains("active")
+    (document.getElementById("nav-collage")?.classList.contains("active") ||
+      document.getElementById("nav-photos")?.classList.contains("active"))
   ) {
     wisselTab("fysisch");
   }
@@ -1505,15 +1506,19 @@ function wisselTab(tabNaam) {
   ["view-fysisch", "view-beworteling"].forEach(
     (id) => (document.getElementById(id).style.display = "none"),
   );
-  ["nav-fysisch", "nav-beworteling", "nav-collage"].forEach((id) =>
+  ["nav-fysisch", "nav-beworteling", "nav-photos", "nav-collage"].forEach((id) =>
     document.getElementById(id).classList.remove("active"),
   );
   document.getElementById("dashboard-container").style.display = "none";
   document.getElementById("collage-view").style.display = "none";
+  document.getElementById("photo-manager-view").style.display = "none";
 
   document.getElementById("nav-" + tabNaam).classList.add("active");
 
-  if (tabNaam === "collage") {
+  if (tabNaam === "photos") {
+    document.getElementById("photo-manager-view").style.display = "flex";
+    renderDesktopPhotoManager();
+  } else if (tabNaam === "collage") {
     document.getElementById("collage-view").style.display = "flex";
     updateCollageUI();
   } else {
@@ -1620,6 +1625,8 @@ let storageDbPromise = null;
 let fieldPhotoObjectUrls = [];
 let fieldPhotoRenderVersion = 0;
 let lightboxObjectUrl = null;
+let desktopPhotoObjectUrls = [];
+let desktopPhotoRenderVersion = 0;
 
 function openStorageDb() {
   if (!storageDbPromise) {
@@ -1817,6 +1824,13 @@ async function wisAlles() {
     await clearProjectStorage();
     fieldPhotoObjectUrls.forEach((url) => URL.revokeObjectURL(url));
     fieldPhotoObjectUrls = [];
+    desktopPhotoObjectUrls.forEach((url) => URL.revokeObjectURL(url));
+    desktopPhotoObjectUrls = [];
+    if (collageFieldPhotoObjectUrl)
+      URL.revokeObjectURL(collageFieldPhotoObjectUrl);
+    collageFieldPhotoObjectUrl = null;
+    collageImages[2] = null;
+    collageThirdSource = null;
     window.projectData = {};
     for (let nummer = 1; nummer <= 10; nummer++)
       window.projectData[nummer] = null;
@@ -1949,6 +1963,8 @@ async function handleFieldPhotoUpload(event) {
     });
     markProjectChanged();
     await renderFieldPhotos();
+    if (document.getElementById("nav-photos")?.classList.contains("active"))
+      await renderDesktopPhotoManager();
   } catch (error) {
     console.error(error);
     toonNotificatie("Foto toevoegen mislukt.", "fout");
@@ -1961,6 +1977,8 @@ async function removeFieldPhoto(category, index) {
   if (removed?.id) await deletePhotoBlob(removed.id);
   markProjectChanged();
   await renderFieldPhotos();
+  if (document.getElementById("nav-photos")?.classList.contains("active"))
+    await renderDesktopPhotoManager();
 }
 
 async function renderFieldPhotos() {
@@ -2007,6 +2025,194 @@ async function renderFieldPhotos() {
       card.append(preview, actions);
       grid.appendChild(card);
     }
+  }
+}
+
+function getPhotoItem(category, index) {
+  return ensureCurrentGPOPhotos()[category]?.[index] || null;
+}
+
+function renameFieldPhoto(category, index, value) {
+  const photo = getPhotoItem(category, index);
+  if (!photo) return;
+  photo.label = value.trim() || `Foto ${index + 1}`;
+  markProjectChanged();
+  renderFieldPhotos();
+  renderDesktopPhotoManager();
+}
+
+function setPhotoForCollage(category, index, selected) {
+  const photos = ensureCurrentGPOPhotos();
+  ["fysisch", "beworteling"].forEach((photoCategory) => {
+    (photos[photoCategory] || []).forEach((photo) => {
+      photo.selectedForCollage = false;
+    });
+  });
+  const photo = getPhotoItem(category, index);
+  if (photo) photo.selectedForCollage = selected;
+  markProjectChanged();
+  renderDesktopPhotoManager();
+  if (selected) changeCollageLayout(3);
+}
+
+function setPhotoForReport(category, index, selected) {
+  const photo = getPhotoItem(category, index);
+  if (!photo) return;
+  photo.selectedForReport = selected;
+  markProjectChanged();
+  renderDesktopPhotoManager();
+}
+
+async function decodePhotoBlob(blob) {
+  if (typeof createImageBitmap === "function") return createImageBitmap(blob);
+  const url = URL.createObjectURL(blob);
+  try {
+    return await new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = reject;
+      image.src = url;
+    });
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+async function rotateFieldPhoto(category, index, degrees) {
+  const photo = getPhotoItem(category, index);
+  if (!photo) return;
+  try {
+    const blob = await getPhotoBlob(photo.id);
+    if (!blob) throw new Error("Foto ontbreekt in de lokale opslag.");
+    const source = await decodePhotoBlob(blob);
+    const sourceWidth = source.width || source.naturalWidth;
+    const sourceHeight = source.height || source.naturalHeight;
+    const canvas = document.createElement("canvas");
+    canvas.width = sourceHeight;
+    canvas.height = sourceWidth;
+    const context = canvas.getContext("2d");
+    context.translate(canvas.width / 2, canvas.height / 2);
+    context.rotate((degrees * Math.PI) / 180);
+    context.drawImage(source, -sourceWidth / 2, -sourceHeight / 2);
+    source.close?.();
+    const rotatedBlob = await new Promise((resolve, reject) => {
+      canvas.toBlob(
+        (result) =>
+          result ? resolve(result) : reject(new Error("Draaien mislukt.")),
+        "image/jpeg",
+        PHOTO_QUALITY,
+      );
+    });
+    await putPhotoBlob(photo.id, rotatedBlob);
+    photo.type = "image/jpeg";
+    photo.size = rotatedBlob.size;
+    markProjectChanged();
+    await renderFieldPhotos();
+    await renderDesktopPhotoManager();
+  } catch (error) {
+    console.error(error);
+    toonNotificatie("Foto draaien mislukt.", "fout");
+  }
+}
+
+async function renderDesktopPhotoManager() {
+  const grid = document.getElementById("desktop-photo-grid");
+  const summary = document.getElementById("desktop-photo-summary");
+  if (!grid || !summary) return;
+  const renderVersion = ++desktopPhotoRenderVersion;
+  desktopPhotoObjectUrls.forEach((url) => URL.revokeObjectURL(url));
+  desktopPhotoObjectUrls = [];
+  grid.innerHTML = "";
+  const photos = ensureCurrentGPOPhotos();
+  const items = [];
+  ["fysisch", "beworteling"].forEach((category) => {
+    (photos[category] || []).forEach((photo, index) =>
+      items.push({ category, photo, index }),
+    );
+  });
+  const selectedReports = items.filter(
+    ({ photo }) => photo.selectedForReport,
+  ).length;
+  summary.textContent = `${items.length} foto('s) bij GPO ${currentGPO} · ${selectedReports} geselecteerd voor rapportage`;
+  if (items.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "desktop-photo-empty";
+    empty.textContent = "Nog geen veldfoto’s toegevoegd aan dit GPO.";
+    grid.appendChild(empty);
+    return;
+  }
+
+  for (const { category, photo, index } of items) {
+    const blob = await getPhotoBlob(photo.id);
+    if (renderVersion !== desktopPhotoRenderVersion) return;
+    if (!blob) continue;
+    const url = URL.createObjectURL(blob);
+    desktopPhotoObjectUrls.push(url);
+
+    const card = document.createElement("article");
+    card.className = "desktop-photo-card";
+    const categoryBadge = document.createElement("span");
+    categoryBadge.className = "desktop-photo-category";
+    categoryBadge.textContent =
+      category === "fysisch" ? "Fysisch" : "Wortelontwikkeling";
+
+    const preview = document.createElement("button");
+    preview.className = "field-photo-preview";
+    preview.type = "button";
+    preview.title = "Klik om de foto groot te bekijken";
+    preview.onclick = () => openPhotoLightbox(photo.id, photo.label);
+    const image = document.createElement("img");
+    image.src = url;
+    image.alt = photo.label || `Foto ${index + 1}`;
+    preview.appendChild(image);
+
+    const nameInput = document.createElement("input");
+    nameInput.className = "desktop-photo-name";
+    nameInput.type = "text";
+    nameInput.value = photo.label || `Foto ${index + 1}`;
+    nameInput.setAttribute("aria-label", "Fotonaam");
+    nameInput.onchange = () =>
+      renameFieldPhoto(category, index, nameInput.value);
+
+    const selections = document.createElement("div");
+    selections.className = "desktop-photo-selections";
+    const collageLabel = document.createElement("label");
+    const collageCheckbox = document.createElement("input");
+    collageCheckbox.type = "checkbox";
+    collageCheckbox.checked = Boolean(photo.selectedForCollage);
+    collageCheckbox.onchange = () =>
+      setPhotoForCollage(category, index, collageCheckbox.checked);
+    collageLabel.append(collageCheckbox, " Collagefoto");
+    const reportLabel = document.createElement("label");
+    const reportCheckbox = document.createElement("input");
+    reportCheckbox.type = "checkbox";
+    reportCheckbox.checked = Boolean(photo.selectedForReport);
+    reportCheckbox.onchange = () =>
+      setPhotoForReport(category, index, reportCheckbox.checked);
+    reportLabel.append(reportCheckbox, " In rapport");
+    selections.append(collageLabel, reportLabel);
+
+    const actions = document.createElement("div");
+    actions.className = "desktop-photo-actions";
+    const rotateLeft = document.createElement("button");
+    rotateLeft.className = "action-btn";
+    rotateLeft.type = "button";
+    rotateLeft.textContent = "↶ Links";
+    rotateLeft.onclick = () => rotateFieldPhoto(category, index, -90);
+    const rotateRight = document.createElement("button");
+    rotateRight.className = "action-btn";
+    rotateRight.type = "button";
+    rotateRight.textContent = "↷ Rechts";
+    rotateRight.onclick = () => rotateFieldPhoto(category, index, 90);
+    const remove = document.createElement("button");
+    remove.className = "action-btn";
+    remove.type = "button";
+    remove.textContent = "Verwijder";
+    remove.onclick = () => removeFieldPhoto(category, index);
+    actions.append(rotateLeft, rotateRight, remove);
+
+    card.append(categoryBadge, preview, nameInput, selections, actions);
+    grid.appendChild(card);
   }
 }
 
@@ -2089,6 +2295,10 @@ function wisselGPO(nieuwNummer) {
   renderGPOTabs();
   syncMaxDieptes();
   renderFieldPhotos();
+  if (document.getElementById("nav-photos")?.classList.contains("active"))
+    renderDesktopPhotoManager();
+  if (document.getElementById("nav-collage")?.classList.contains("active"))
+    updateCollageUI();
   scrollFieldModeToProfile();
 }
 
@@ -2299,6 +2509,8 @@ function buildProjectExportData(gpoNummers = null) {
         type: photo.type || "image/jpeg",
         size: photo.size || 0,
         path: getPhotoArchivePath(nummer, category, index),
+        selectedForCollage: Boolean(photo.selectedForCollage),
+        selectedForReport: Boolean(photo.selectedForReport),
       }));
     });
     copy.photos = photos;
@@ -2322,6 +2534,20 @@ function buildRapportageTekst(gpoNummers) {
       regels.push(`Boom: ${data.meta.boom || ""}`);
       regels.push(`Afstand: ${data.meta.dist || ""} cm`);
       regels.push(`Windrichting: ${data.meta.wind || ""}`);
+    }
+    const selectedPhotos = [];
+    const photos = data.photos || getEmptyPhotos();
+    ["fysisch", "beworteling"].forEach((category) => {
+      (photos[category] || []).forEach((photo, index) => {
+        if (!photo.selectedForReport) return;
+        selectedPhotos.push(
+          `${photo.label || `Foto ${index + 1}`} (${getPhotoArchivePath(nummer, category, index)})`,
+        );
+      });
+    });
+    if (selectedPhotos.length) {
+      regels.push("Geselecteerde veldfoto's:");
+      selectedPhotos.forEach((photo) => regels.push(`- ${photo}`));
     }
     if (nummer === currentGPO) {
       regels.push("Beschrijving fysisch:");
@@ -2493,6 +2719,8 @@ async function migratePhotosToIndexedDb(data, zip = null) {
           label: photo.label || `Foto ${index + 1}`,
           type: blob?.type || photo.type || "image/jpeg",
           size: blob?.size || photo.size || 0,
+          selectedForCollage: Boolean(photo.selectedForCollage),
+          selectedForReport: Boolean(photo.selectedForReport),
         });
       }
       gpo.photos[category] = migrated;
@@ -2906,11 +3134,48 @@ function toonNotificatie(tekst, type = "succes") {
 // ==========================================
 let collageImages = [null, null, null];
 let currentCollageLayout = 2;
+let collageThirdSource = null;
+let collageFieldPhotoObjectUrl = null;
+
+function getSelectedCollagePhoto() {
+  const photos = ensureCurrentGPOPhotos();
+  for (const category of ["fysisch", "beworteling"]) {
+    const index = (photos[category] || []).findIndex(
+      (photo) => photo.selectedForCollage,
+    );
+    if (index >= 0) return { category, index, photo: photos[category][index] };
+  }
+  return null;
+}
+
+async function syncSelectedFieldPhotoToCollage() {
+  const selected = getSelectedCollagePhoto();
+  if (!selected) {
+    if (collageThirdSource === "field") collageImages[2] = null;
+    collageThirdSource = collageThirdSource === "field" ? null : collageThirdSource;
+    if (collageFieldPhotoObjectUrl)
+      URL.revokeObjectURL(collageFieldPhotoObjectUrl);
+    collageFieldPhotoObjectUrl = null;
+    return;
+  }
+  const blob = await getPhotoBlob(selected.photo.id);
+  if (!blob) return;
+  if (collageFieldPhotoObjectUrl)
+    URL.revokeObjectURL(collageFieldPhotoObjectUrl);
+  collageFieldPhotoObjectUrl = URL.createObjectURL(blob);
+  collageImages[2] = await loadImage(collageFieldPhotoObjectUrl);
+  collageThirdSource = "field";
+  const label = document.getElementById("slot-2-label");
+  if (label) label.textContent = selected.photo.label || "Veldfoto";
+  changeCollageLayout(3);
+}
 
 function renderCollageSlot2() {
   const slot = document.getElementById("slot-2");
   const imgObj = collageImages[2];
   const showBorder = document.getElementById("col-showBorder").checked;
+  const label = document.getElementById("slot-2-label");
+  if (label && collageThirdSource !== "field") label.textContent = "Extra foto";
 
   slot.innerHTML = "";
   if (!imgObj) {
@@ -2944,6 +3209,8 @@ function changeCollageLayout(num) {
   currentCollageLayout = num;
   const grid = document.getElementById("collageGrid");
   if (grid) grid.setAttribute("data-cols", num);
+  const radio = document.querySelector(`input[name="layout"][value="${num}"]`);
+  if (radio) radio.checked = true;
   const wrap2 = document.getElementById("wrap-2");
   if (wrap2) {
     if (num === 2) wrap2.classList.add("hidden");
@@ -2962,7 +3229,18 @@ function handleCollageUpload(e) {
   reader.onload = function (evt) {
     const img = new Image();
     img.onload = () => {
+      const photos = ensureCurrentGPOPhotos();
+      ["fysisch", "beworteling"].forEach((category) =>
+        (photos[category] || []).forEach((photo) => {
+          photo.selectedForCollage = false;
+        }),
+      );
+      if (collageFieldPhotoObjectUrl)
+        URL.revokeObjectURL(collageFieldPhotoObjectUrl);
+      collageFieldPhotoObjectUrl = null;
       collageImages[2] = img;
+      collageThirdSource = "manual";
+      markProjectChanged();
       renderCollageSlot2();
     };
     img.src = evt.target.result;
@@ -2972,13 +3250,27 @@ function handleCollageUpload(e) {
 }
 function clearCollageSlot(idx) {
   if (idx === 2) {
+    if (collageThirdSource === "field") {
+      const photos = ensureCurrentGPOPhotos();
+      ["fysisch", "beworteling"].forEach((category) =>
+        (photos[category] || []).forEach((photo) => {
+          photo.selectedForCollage = false;
+        }),
+      );
+      markProjectChanged();
+    }
+    if (collageFieldPhotoObjectUrl)
+      URL.revokeObjectURL(collageFieldPhotoObjectUrl);
+    collageFieldPhotoObjectUrl = null;
     collageImages[2] = null;
+    collageThirdSource = null;
     renderCollageSlot2();
   }
 }
 
 // --- DE MAGIE: GENERATE ONZICHTBARE DOM VOOR EXPORT ---
 async function generateHighResCollageCanvas() {
+  await syncSelectedFieldPhotoToCollage();
   const tempContainer = document.createElement("div");
   tempContainer.style.position = "fixed";
   tempContainer.style.left = "-10000px";
@@ -3041,7 +3333,7 @@ async function generateHighResCollageCanvas() {
 }
 
 // Update de Collage tabbladen (LIVE PREVIEW)
-function updateCollageUI() {
+async function updateCollageUI() {
   const slot0 = document.getElementById("slot-0");
   const slot1 = document.getElementById("slot-1");
 
@@ -3073,6 +3365,7 @@ function updateCollageUI() {
     );
   }
 
+  await syncSelectedFieldPhotoToCollage();
   renderCollageSlot2();
 }
 
