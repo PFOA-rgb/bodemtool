@@ -1606,6 +1606,7 @@ const CURRENT_DRAFT_ID = "current-project";
 let storageDbPromise = null;
 let fieldPhotoObjectUrls = [];
 let fieldPhotoRenderVersion = 0;
+let lightboxObjectUrl = null;
 
 function openStorageDb() {
   if (!storageDbPromise) {
@@ -1692,6 +1693,21 @@ async function prunePhotoStore(projectDataToKeep) {
   });
 }
 
+async function clearProjectStorage() {
+  const db = await openStorageDb();
+  await new Promise((resolve, reject) => {
+    const transaction = db.transaction(
+      [PHOTO_STORE, DRAFT_STORE],
+      "readwrite",
+    );
+    transaction.objectStore(PHOTO_STORE).clear();
+    transaction.objectStore(DRAFT_STORE).clear();
+    transaction.oncomplete = resolve;
+    transaction.onerror = () => reject(transaction.error);
+    transaction.onabort = () => reject(transaction.error);
+  });
+}
+
 function setAutoSaveStatus(text, state = "") {
   const status = document.getElementById("autosave-status");
   if (!status) return;
@@ -1756,6 +1772,79 @@ async function requestPersistentStorage() {
     console.warn("Permanente browseropslag kon niet worden aangevraagd.", error);
   }
 }
+
+async function wisAlles() {
+  const bevestigd = confirm(
+    "Weet je zeker dat je het volledige project wilt wissen? Alle GPO's, foto's en automatisch opgeslagen gegevens verdwijnen definitief.",
+  );
+  if (!bevestigd) return;
+
+  window.autoSaveReady = false;
+  clearTimeout(window.autoSaveTimer);
+  setAutoSaveStatus("Wissen…", "saving");
+  try {
+    closePhotoLightbox();
+    await clearProjectStorage();
+    fieldPhotoObjectUrls.forEach((url) => URL.revokeObjectURL(url));
+    fieldPhotoObjectUrls = [];
+    window.projectData = {};
+    for (let nummer = 1; nummer <= 10; nummer++)
+      window.projectData[nummer] = null;
+    window.globalSettings = {
+      showHeader: false,
+      headers: { fysisch: "Fysisch", beworteling: "Wortelontwikkeling" },
+      project: "",
+      locatie: "",
+      opdrachtgever: "",
+      onderzoeker: "",
+    };
+    window.currentGPO = 0;
+    window.rootColorCache = {};
+    wisselGPO(1);
+    wisselTab("fysisch");
+    window.hasUnsavedChanges = false;
+    setAutoSaveStatus("Leeg project", "saved");
+    toonNotificatie("Het volledige project is gewist.", "succes");
+    requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "smooth" }));
+  } catch (error) {
+    console.error(error);
+    setAutoSaveStatus("Wissen mislukt", "error");
+    toonNotificatie("Project wissen mislukt.", "fout");
+  } finally {
+    window.autoSaveReady = true;
+  }
+}
+
+async function openPhotoLightbox(photoId, label) {
+  const blob = await getPhotoBlob(photoId);
+  if (!blob) {
+    toonNotificatie("Foto kon niet worden geopend.", "fout");
+    return;
+  }
+  closePhotoLightbox();
+  lightboxObjectUrl = URL.createObjectURL(blob);
+  const lightbox = document.getElementById("photo-lightbox");
+  document.getElementById("photo-lightbox-title").textContent =
+    label || "Foto controleren";
+  document.getElementById("photo-lightbox-image").src = lightboxObjectUrl;
+  lightbox.hidden = false;
+  document.body.classList.add("photo-lightbox-open");
+  lightbox.querySelector("button")?.focus();
+}
+
+function closePhotoLightbox() {
+  const lightbox = document.getElementById("photo-lightbox");
+  const image = document.getElementById("photo-lightbox-image");
+  if (lightbox) lightbox.hidden = true;
+  if (image) image.removeAttribute("src");
+  document.body.classList.remove("photo-lightbox-open");
+  if (lightboxObjectUrl) URL.revokeObjectURL(lightboxObjectUrl);
+  lightboxObjectUrl = null;
+}
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") closePhotoLightbox();
+});
 
 function getEmptyPhotos() {
   return { fysisch: [], beworteling: [] };
@@ -1863,6 +1952,16 @@ async function renderFieldPhotos() {
       const img = document.createElement("img");
       img.src = url;
       img.alt = photo.label || `Foto ${idx + 1}`;
+      const preview = document.createElement("button");
+      preview.className = "field-photo-preview";
+      preview.type = "button";
+      preview.title = "Klik om de foto groot te bekijken";
+      preview.setAttribute(
+        "aria-label",
+        `${photo.label || `Foto ${idx + 1}`} groot bekijken`,
+      );
+      preview.onclick = () => openPhotoLightbox(photo.id, photo.label);
+      preview.appendChild(img);
       const actions = document.createElement("div");
       actions.className = "field-photo-actions";
       const label = document.createElement("span");
@@ -1874,7 +1973,7 @@ async function renderFieldPhotos() {
       button.textContent = "Verwijder";
       button.onclick = () => removeFieldPhoto(category, idx);
       actions.append(label, button);
-      card.append(img, actions);
+      card.append(preview, actions);
       grid.appendChild(card);
     }
   }

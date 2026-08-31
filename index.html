@@ -81,6 +81,13 @@
                         style="display: none"
                 /></label>
                 <button class="tb-btn" onclick="slaOpProject()">Opslaan</button>
+                <button
+                    class="tb-btn danger-btn"
+                    onclick="wisAlles()"
+                    title="Wis het volledige lokale project"
+                >
+                    Alles wissen
+                </button>
                 <span id="autosave-status" class="autosave-status" aria-live="polite"></span>
             </div>
         </div>
@@ -372,7 +379,7 @@
                         <button class="tb-btn" onclick="triggerFieldPhotoUpload('fysisch')">+ Foto toevoegen</button>
                     </div>
                     <div class="field-photo-grid" id="photos-fysisch-grid"></div>
-                    <div class="field-photo-note">Maximaal 4 foto's. Foto’s worden verkleind en automatisch lokaal opgeslagen.</div>
+                    <div class="field-photo-note">Maximaal 4 foto's. Klik op een miniatuur om de foto groot te controleren.</div>
                 </div>
                 <div class="field-photo-panel" id="photos-beworteling-panel" style="display: none">
                     <div class="field-photo-header">
@@ -380,7 +387,7 @@
                         <button class="tb-btn" onclick="triggerFieldPhotoUpload('beworteling')">+ Foto toevoegen</button>
                     </div>
                     <div class="field-photo-grid" id="photos-beworteling-grid"></div>
-                    <div class="field-photo-note">Maximaal 4 foto's. Foto’s worden verkleind en automatisch lokaal opgeslagen.</div>
+                    <div class="field-photo-note">Maximaal 4 foto's. Klik op een miniatuur om de foto groot te controleren.</div>
                 </div>
             </div>
 
@@ -718,6 +725,26 @@
             style="display: none"
             onchange="handleFieldPhotoUpload(event)"
         />
+
+        <div
+            id="photo-lightbox"
+            class="photo-lightbox"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="photo-lightbox-title"
+            hidden
+        >
+            <div class="photo-lightbox-backdrop" onclick="closePhotoLightbox()"></div>
+            <div class="photo-lightbox-content">
+                <div class="photo-lightbox-header">
+                    <strong id="photo-lightbox-title">Foto controleren</strong>
+                    <button class="tb-btn" type="button" onclick="closePhotoLightbox()">
+                        Sluiten
+                    </button>
+                </div>
+                <img id="photo-lightbox-image" alt="Grote weergave van de geselecteerde foto" />
+            </div>
+        </div>
 
         <div id="collage-view" class="collage-layout" style="display: none">
             <div class="collage-header-card">
