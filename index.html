@@ -76,11 +76,12 @@
                     <input
                         type="file"
                         id="file-input"
-                        accept=".json"
+                        accept=".zip,.json,application/zip,application/json"
                         onchange="laadProject(event)"
                         style="display: none"
                 /></label>
                 <button class="tb-btn" onclick="slaOpProject()">Opslaan</button>
+                <span id="autosave-status" class="autosave-status" aria-live="polite"></span>
             </div>
         </div>
 
@@ -111,7 +112,7 @@
                             <button class="tb-btn" onclick="triggerFieldPhotoUpload('fysisch')">+ Foto toevoegen</button>
                         </div>
                         <div class="field-photo-grid" id="photos-fysisch-grid"></div>
-                        <div class="field-photo-note">Maximaal 4 foto's. Foto’s worden verkleind opgeslagen in het projectbestand.</div>
+                        <div class="field-photo-note">Maximaal 4 foto's. Foto’s worden verkleind en automatisch lokaal opgeslagen.</div>
                     </div>
                 </div>
                 <div id="input-sectie-opname" style="display: none">
@@ -139,7 +140,7 @@
                             <button class="tb-btn" onclick="triggerFieldPhotoUpload('beworteling')">+ Foto toevoegen</button>
                         </div>
                         <div class="field-photo-grid" id="photos-beworteling-grid"></div>
-                        <div class="field-photo-note">Maximaal 4 foto's. Foto’s worden verkleind opgeslagen in het projectbestand.</div>
+                        <div class="field-photo-note">Maximaal 4 foto's. Foto’s worden verkleind en automatisch lokaal opgeslagen.</div>
                     </div>
                 </div>
             </div>

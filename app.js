@@ -11,6 +11,8 @@ window.projectData = {};
 for (let i = 1; i <= 10; i++) window.projectData[i] = null;
 window.rootColorCache = {};
 window.activeTab = null;
+window.autoSaveReady = false;
+window.autoSaveTimer = null;
 
 // Variabele om wijzigingen bij te houden
 window.hasUnsavedChanges = false;
@@ -169,7 +171,7 @@ function toggleFieldMode() {
 }
 
 // --- OPSTARTEN ---
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   initFieldMode();
   genereerGPOTabs();
 
@@ -204,18 +206,15 @@ document.addEventListener("DOMContentLoaded", () => {
   // FAILSAFE LOGICA
   const dashboard = document.getElementById("dashboard-container");
   if (dashboard) {
-    dashboard.addEventListener("input", function () {
-      window.hasUnsavedChanges = true;
-    });
-    dashboard.addEventListener("change", function () {
-      window.hasUnsavedChanges = true;
-    });
+    dashboard.addEventListener("input", markProjectChanged);
+    dashboard.addEventListener("change", markProjectChanged);
   }
 
-  // Reset de vlag na 0.5 seconde
-  setTimeout(() => {
-    window.hasUnsavedChanges = false;
-  }, 500);
+  await restoreAutoDraft();
+  window.autoSaveReady = true;
+  window.hasUnsavedChanges = false;
+  setAutoSaveStatus("Lokaal opgeslagen", "saved");
+  requestPersistentStorage();
 });
 
 // ==========================================
@@ -251,7 +250,7 @@ window.getVal = function (parent, sel1, sel2) {
 function verwijderLaag(containerId) {
   const container = document.getElementById(containerId);
   if (container.lastChild) container.lastChild.remove();
-  window.hasUnsavedChanges = true;
+  markProjectChanged();
   updateUI();
   updateRootUI();
 }
@@ -347,7 +346,7 @@ function getTextureLayersHtml(c) {
 // ==========================================
 
 function voegBodemLaagToe(d = null) {
-  if (d === null) window.hasUnsavedChanges = true;
+  if (d === null) markProjectChanged();
 
   const con = document.getElementById("bodem-container");
   let s = 0,
@@ -419,7 +418,7 @@ function voegBodemLaagToe(d = null) {
 }
 
 function voegOpnameLaagToe(d = null) {
-  if (d === null) window.hasUnsavedChanges = true;
+  if (d === null) markProjectChanged();
   const con = document.getElementById("opname-container");
   let s = 0,
     e = 20;
@@ -490,7 +489,7 @@ function voegOpnameLaagToe(d = null) {
 }
 
 function voegStabLaagToe(d = null) {
-  if (d === null) window.hasUnsavedChanges = true;
+  if (d === null) markProjectChanged();
   const con = document.getElementById("stab-container");
   let s = 0,
     e = 20;
@@ -561,7 +560,7 @@ function voegStabLaagToe(d = null) {
 }
 
 function voegOndergrondKenmerkToe(d = null) {
-  if (d === null) window.hasUnsavedChanges = true;
+  if (d === null) markProjectChanged();
   const con = document.getElementById("ondergrond-container");
   let s = 0,
     e = 30;
@@ -934,7 +933,7 @@ function moveRootDrag(event) {
     y: Math.round(y * 10) / 10,
   };
   input.value = JSON.stringify(positions);
-  window.hasUnsavedChanges = true;
+  markProjectChanged();
 }
 
 function stopRootDrag() {
@@ -1590,6 +1589,164 @@ let pendingPhotoCategory = null;
 const MAX_FIELD_PHOTOS = 4;
 const PHOTO_MAX_SIZE = 1600;
 const PHOTO_QUALITY = 0.8;
+const STORAGE_DB_NAME = "bodemtool-storage";
+const STORAGE_DB_VERSION = 1;
+const PHOTO_STORE = "photos";
+const DRAFT_STORE = "drafts";
+const CURRENT_DRAFT_ID = "current-project";
+let storageDbPromise = null;
+let fieldPhotoObjectUrls = [];
+let fieldPhotoRenderVersion = 0;
+
+function openStorageDb() {
+  if (!storageDbPromise) {
+    storageDbPromise = new Promise((resolve, reject) => {
+      const request = indexedDB.open(STORAGE_DB_NAME, STORAGE_DB_VERSION);
+      request.onupgradeneeded = () => {
+        const db = request.result;
+        if (!db.objectStoreNames.contains(PHOTO_STORE))
+          db.createObjectStore(PHOTO_STORE, { keyPath: "id" });
+        if (!db.objectStoreNames.contains(DRAFT_STORE))
+          db.createObjectStore(DRAFT_STORE, { keyPath: "id" });
+      };
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
+  return storageDbPromise;
+}
+
+async function runStorageTransaction(storeName, mode, operation) {
+  const db = await openStorageDb();
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(storeName, mode);
+    const store = transaction.objectStore(storeName);
+    let result;
+    try {
+      result = operation(store);
+    } catch (error) {
+      reject(error);
+      return;
+    }
+    transaction.oncomplete = () => resolve(result);
+    transaction.onerror = () => reject(transaction.error);
+    transaction.onabort = () => reject(transaction.error);
+  });
+}
+
+function putPhotoBlob(id, blob) {
+  return runStorageTransaction(PHOTO_STORE, "readwrite", (store) =>
+    store.put({ id, blob, updatedAt: Date.now() }),
+  );
+}
+
+async function getPhotoBlob(id) {
+  const db = await openStorageDb();
+  return new Promise((resolve, reject) => {
+    const request = db
+      .transaction(PHOTO_STORE, "readonly")
+      .objectStore(PHOTO_STORE)
+      .get(id);
+    request.onsuccess = () => resolve(request.result?.blob || null);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+function deletePhotoBlob(id) {
+  return runStorageTransaction(PHOTO_STORE, "readwrite", (store) =>
+    store.delete(id),
+  );
+}
+
+async function prunePhotoStore(projectDataToKeep) {
+  const activeIds = new Set();
+  for (let nummer = 1; nummer <= 10; nummer++) {
+    const photos = projectDataToKeep[nummer]?.photos;
+    if (!photos) continue;
+    ["fysisch", "beworteling"].forEach((category) => {
+      (photos[category] || []).forEach((photo) => activeIds.add(photo.id));
+    });
+  }
+  const db = await openStorageDb();
+  await new Promise((resolve, reject) => {
+    const transaction = db.transaction(PHOTO_STORE, "readwrite");
+    const store = transaction.objectStore(PHOTO_STORE);
+    const request = store.getAllKeys();
+    request.onsuccess = () => {
+      request.result.forEach((id) => {
+        if (!activeIds.has(id)) store.delete(id);
+      });
+    };
+    request.onerror = () => reject(request.error);
+    transaction.oncomplete = resolve;
+    transaction.onerror = () => reject(transaction.error);
+  });
+}
+
+function setAutoSaveStatus(text, state = "") {
+  const status = document.getElementById("autosave-status");
+  if (!status) return;
+  status.textContent = text;
+  status.className = `autosave-status ${state}`.trim();
+}
+
+function markProjectChanged() {
+  window.hasUnsavedChanges = true;
+  if (!window.autoSaveReady) return;
+  setAutoSaveStatus("Opslaan…", "saving");
+  clearTimeout(window.autoSaveTimer);
+  window.autoSaveTimer = setTimeout(saveAutoDraft, 600);
+}
+
+async function saveAutoDraft() {
+  if (!window.autoSaveReady) return;
+  try {
+    if (document.getElementById("meta-project")) updateGlobalMeta();
+    slaHuidigProfielOpInGeheugen();
+    await runStorageTransaction(DRAFT_STORE, "readwrite", (store) =>
+      store.put({
+        id: CURRENT_DRAFT_ID,
+        data: window.projectData,
+        global: window.globalSettings,
+        updatedAt: Date.now(),
+      }),
+    );
+    window.hasUnsavedChanges = false;
+    setAutoSaveStatus("Lokaal opgeslagen", "saved");
+  } catch (error) {
+    console.error(error);
+    setAutoSaveStatus("Opslaan mislukt", "error");
+  }
+}
+
+async function restoreAutoDraft() {
+  try {
+    const db = await openStorageDb();
+    const draft = await new Promise((resolve, reject) => {
+      const request = db
+        .transaction(DRAFT_STORE, "readonly")
+        .objectStore(DRAFT_STORE)
+        .get(CURRENT_DRAFT_ID);
+      request.onsuccess = () => resolve(request.result || null);
+      request.onerror = () => reject(request.error);
+    });
+    if (!draft?.data) return false;
+    await applyLoadedProject({ data: draft.data, global: draft.global }, null, false);
+    return true;
+  } catch (error) {
+    console.error("Automatisch opgeslagen project kon niet worden hersteld.", error);
+    setAutoSaveStatus("Herstel mislukt", "error");
+    return false;
+  }
+}
+
+async function requestPersistentStorage() {
+  try {
+    if (navigator.storage?.persist) await navigator.storage.persist();
+  } catch (error) {
+    console.warn("Permanente browseropslag kon niet worden aangevraagd.", error);
+  }
+}
 
 function getEmptyPhotos() {
   return { fysisch: [], beworteling: [] };
@@ -1626,7 +1783,14 @@ function resizeImageFile(file) {
         canvas.height = Math.round(img.height * scale);
         const ctx = canvas.getContext("2d");
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL("image/jpeg", PHOTO_QUALITY));
+        canvas.toBlob(
+          (blob) =>
+            blob
+              ? resolve(blob)
+              : reject(new Error("Foto converteren mislukt.")),
+          "image/jpeg",
+          PHOTO_QUALITY,
+        );
       };
       img.onerror = reject;
       img.src = reader.result;
@@ -1643,45 +1807,68 @@ async function handleFieldPhotoUpload(event) {
   try {
     const photos = ensureCurrentGPOPhotos();
     if (photos[pendingPhotoCategory].length >= MAX_FIELD_PHOTOS) return;
-    const src = await resizeImageFile(file);
+    const blob = await resizeImageFile(file);
+    const id = crypto.randomUUID
+      ? `photo-${crypto.randomUUID()}`
+      : `photo-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    await putPhotoBlob(id, blob);
     photos[pendingPhotoCategory].push({
-      id: `photo-${Date.now()}`,
+      id,
       label: `Foto ${photos[pendingPhotoCategory].length + 1}`,
-      src,
+      type: "image/jpeg",
+      size: blob.size,
     });
-    window.hasUnsavedChanges = true;
-    renderFieldPhotos();
+    markProjectChanged();
+    await renderFieldPhotos();
   } catch (error) {
     console.error(error);
     toonNotificatie("Foto toevoegen mislukt.", "fout");
   }
 }
 
-function removeFieldPhoto(category, index) {
+async function removeFieldPhoto(category, index) {
   const photos = ensureCurrentGPOPhotos();
-  photos[category].splice(index, 1);
-  window.hasUnsavedChanges = true;
-  renderFieldPhotos();
+  const [removed] = photos[category].splice(index, 1);
+  if (removed?.id) await deletePhotoBlob(removed.id);
+  markProjectChanged();
+  await renderFieldPhotos();
 }
 
-function renderFieldPhotos() {
+async function renderFieldPhotos() {
+  const renderVersion = ++fieldPhotoRenderVersion;
   const photos = ensureCurrentGPOPhotos();
-  ["fysisch", "beworteling"].forEach((category) => {
+  fieldPhotoObjectUrls.forEach((url) => URL.revokeObjectURL(url));
+  fieldPhotoObjectUrls = [];
+  for (const category of ["fysisch", "beworteling"]) {
     const grid = document.getElementById(`photos-${category}-grid`);
-    if (!grid) return;
-    grid.innerHTML = photos[category]
-      .map(
-        (photo, idx) => `
-          <div class="field-photo-card">
-            <img src="${photo.src}" alt="${photo.label}">
-            <div class="field-photo-actions">
-              <span style="flex:1; font-size:12px;">${photo.label}</span>
-              <button class="action-btn" onclick="removeFieldPhoto('${category}', ${idx})">Verwijder</button>
-            </div>
-          </div>`,
-      )
-      .join("");
-  });
+    if (!grid) continue;
+    grid.innerHTML = "";
+    for (const [idx, photo] of photos[category].entries()) {
+      const blob = await getPhotoBlob(photo.id);
+      if (renderVersion !== fieldPhotoRenderVersion) return;
+      if (!blob || !grid.isConnected) continue;
+      const url = URL.createObjectURL(blob);
+      fieldPhotoObjectUrls.push(url);
+      const card = document.createElement("div");
+      card.className = "field-photo-card";
+      const img = document.createElement("img");
+      img.src = url;
+      img.alt = photo.label || `Foto ${idx + 1}`;
+      const actions = document.createElement("div");
+      actions.className = "field-photo-actions";
+      const label = document.createElement("span");
+      label.style.cssText = "flex:1; font-size:12px;";
+      label.textContent = photo.label || `Foto ${idx + 1}`;
+      const button = document.createElement("button");
+      button.className = "action-btn";
+      button.type = "button";
+      button.textContent = "Verwijder";
+      button.onclick = () => removeFieldPhoto(category, idx);
+      actions.append(label, button);
+      card.append(img, actions);
+      grid.appendChild(card);
+    }
+  }
 }
 
 function dupliceerNaarVolgendeGPO() {
@@ -1709,7 +1896,7 @@ function dupliceerNaarVolgendeGPO() {
     JSON.stringify(window.projectData[bron]),
   );
   window.projectData[doel].photos = getEmptyPhotos();
-  window.hasUnsavedChanges = true;
+  markProjectChanged();
   wisselGPO(doel);
   toonNotificatie(`GPO ${bron} gekopieerd naar GPO ${doel}.`, "succes");
 }
@@ -1908,6 +2095,15 @@ function dataUrlToBase64(dataUrl) {
   return dataUrl.split(",")[1] || "";
 }
 
+function dataUrlToBlob(dataUrl) {
+  const [header, base64 = ""] = dataUrl.split(",");
+  const mime = header.match(/data:([^;]+)/)?.[1] || "image/jpeg";
+  const bytes = atob(base64);
+  const buffer = new Uint8Array(bytes.length);
+  for (let i = 0; i < bytes.length; i++) buffer[i] = bytes.charCodeAt(i);
+  return new Blob([buffer], { type: mime });
+}
+
 function cleanBestandsnaam(text) {
   return String(text || "")
     .replace(/[^a-zA-Z0-9\-\.]/g, "_")
@@ -1915,9 +2111,36 @@ function cleanBestandsnaam(text) {
     .replace(/^_|_$/g, "");
 }
 
-function buildProjectExportData() {
+function getPhotoArchivePath(gpoNumber, category, index) {
+  return `GPO_${gpoNumber}/fotos/GPO_${gpoNumber}_${category}_${index + 1}.jpg`;
+}
+
+function buildProjectExportData(gpoNummers = null) {
+  updateGlobalMeta();
   slaHuidigProfielOpInGeheugen();
-  return { data: projectData, global: window.globalSettings };
+  const selected = gpoNummers ? new Set(gpoNummers.map(Number)) : null;
+  const data = {};
+  for (let nummer = 1; nummer <= 10; nummer++) {
+    const source = projectData[nummer];
+    if (!source || (selected && !selected.has(nummer))) {
+      data[nummer] = null;
+      continue;
+    }
+    const copy = JSON.parse(JSON.stringify(source));
+    const photos = copy.photos || getEmptyPhotos();
+    ["fysisch", "beworteling"].forEach((category) => {
+      photos[category] = (photos[category] || []).map((photo, index) => ({
+        id: photo.id,
+        label: photo.label || `Foto ${index + 1}`,
+        type: photo.type || "image/jpeg",
+        size: photo.size || 0,
+        path: getPhotoArchivePath(nummer, category, index),
+      }));
+    });
+    copy.photos = photos;
+    data[nummer] = copy;
+  }
+  return { formatVersion: 2, data, global: window.globalSettings };
 }
 
 function buildRapportageTekst(gpoNummers) {
@@ -1952,12 +2175,14 @@ async function voegGPOAanZipToe(zip, nummer, includeImages) {
   if (!data) return;
   const folder = zip.folder(`GPO_${nummer}`);
   const photos = data.photos || getEmptyPhotos();
-  ["fysisch", "beworteling"].forEach((category) => {
-    const photoFolder = folder.folder("fotos");
-    (photos[category] || []).forEach((photo, idx) => {
-      photoFolder.file(`GPO_${nummer}_${category}_${idx + 1}.jpg`, dataUrlToBase64(photo.src), { base64: true });
-    });
-  });
+  const photoFolder = folder.folder("fotos");
+  for (const category of ["fysisch", "beworteling"]) {
+    for (const [idx, photo] of (photos[category] || []).entries()) {
+      const blob = await getPhotoBlob(photo.id);
+      if (!blob) throw new Error(`Foto ${photo.id} ontbreekt in de lokale opslag.`);
+      photoFolder.file(`GPO_${nummer}_${category}_${idx + 1}.jpg`, blob);
+    }
+  }
 
   if (!includeImages) return;
   const vorigeGPO = currentGPO;
@@ -1977,14 +2202,23 @@ async function exportGPOsZip(gpoNummers, filename, includeImages = true) {
   }
   try {
     const zip = new JSZip();
-    zip.file("project.json", JSON.stringify(buildProjectExportData(), null, 2));
+    zip.file(
+      "project.json",
+      JSON.stringify(buildProjectExportData(gpoNummers), null, 2),
+    );
     zip.file("rapportage_tekst.txt", buildRapportageTekst(gpoNummers));
     for (const nummer of gpoNummers) await voegGPOAanZipToe(zip, nummer, includeImages);
     const blob = await zip.generateAsync({ type: "blob" });
-    await saveBlobBestand(blob, filename, [{ description: "ZIP archief", accept: { "application/zip": [".zip"] } }]);
+    return await saveBlobBestand(blob, filename, [
+      {
+        description: "Bodemtool-project",
+        accept: { "application/zip": [".zip"] },
+      },
+    ]);
   } catch (error) {
     console.error(error);
     toonNotificatie("ZIP export mislukt.", "fout");
+    return false;
   }
 }
 
@@ -2013,52 +2247,130 @@ function exportAlleGPOsZip() {
 
 async function slaOpProject() {
   slaHuidigProfielOpInGeheugen();
-  const exportData = { data: projectData, global: window.globalSettings };
-  const jsonStr = JSON.stringify(exportData);
-  const blob = new Blob([jsonStr], { type: "application/json" });
-  const opgeslagen = await saveBlobBestand(blob, "GPO_Project_Export.json", [
-    { description: "JSON", accept: { "application/json": [".json"] } },
-  ]);
+  const nummers = [];
+  for (let nummer = 1; nummer <= 10; nummer++) {
+    if (projectData[nummer]) nummers.push(nummer);
+  }
+  const project = cleanBestandsnaam(window.globalSettings.project) || "Bodemtool";
+  const opgeslagen = await exportGPOsZip(
+    nummers.length ? nummers : [currentGPO],
+    `${project}_project.zip`,
+    false,
+  );
 
   if (opgeslagen) {
     window.hasUnsavedChanges = false;
-    toonNotificatie("✅ Project opgeslagen.", "succes");
+    await saveAutoDraft();
+    toonNotificatie("Project opgeslagen.", "succes");
   }
 }
 
-function laadProject(event) {
+async function migratePhotosToIndexedDb(data, zip = null) {
+  let missingPhotos = 0;
+  for (let nummer = 1; nummer <= 10; nummer++) {
+    const gpo = data[nummer];
+    if (!gpo) continue;
+    if (!gpo.photos) gpo.photos = getEmptyPhotos();
+    for (const category of ["fysisch", "beworteling"]) {
+      const migrated = [];
+      const photos = Array.isArray(gpo.photos[category])
+        ? gpo.photos[category]
+        : [];
+      for (const [index, photo] of photos.entries()) {
+        const fallbackId = `${Date.now()}-${nummer}-${category}-${index}`;
+        const id = photo.id || `photo-${crypto.randomUUID?.() || fallbackId}`;
+        let blob = null;
+        if (zip) {
+          const path = photo.path || getPhotoArchivePath(nummer, category, index);
+          const entry = zip.file(path);
+          if (entry) blob = await entry.async("blob");
+        }
+        if (
+          !blob &&
+          typeof photo.src === "string" &&
+          photo.src.startsWith("data:")
+        ) {
+          blob = dataUrlToBlob(photo.src);
+        }
+        if (blob) await putPhotoBlob(id, blob);
+        else blob = await getPhotoBlob(id);
+        if (!blob) missingPhotos++;
+        migrated.push({
+          id,
+          label: photo.label || `Foto ${index + 1}`,
+          type: blob?.type || photo.type || "image/jpeg",
+          size: blob?.size || photo.size || 0,
+        });
+      }
+      gpo.photos[category] = migrated;
+    }
+  }
+  return missingPhotos;
+}
+
+async function applyLoadedProject(parsed, zip = null, replacePhotos = true) {
+  const sourceData = parsed.global ? parsed.data : parsed;
+  if (!sourceData || typeof sourceData !== "object")
+    throw new Error("Projectgegevens ontbreken.");
+  const normalizedData = {};
+  for (let nummer = 1; nummer <= 10; nummer++)
+    normalizedData[nummer] = sourceData[nummer] || null;
+  const missingPhotos = await migratePhotosToIndexedDb(normalizedData, zip);
+  if (replacePhotos) await prunePhotoStore(normalizedData);
+  window.projectData = normalizedData;
+  const loadedGlobal = parsed.global || {};
+  window.globalSettings = {
+    showHeader: false,
+    headers: { fysisch: "Fysisch", beworteling: "Wortelontwikkeling" },
+    project: "",
+    locatie: "",
+    opdrachtgever: "",
+    onderzoeker: "",
+    ...loadedGlobal,
+    headers: {
+      fysisch: "Fysisch",
+      beworteling: "Wortelontwikkeling",
+      ...(loadedGlobal.headers || {}),
+    },
+  };
+  window.currentGPO = 0;
+  wisselGPO(1);
+  await renderFieldPhotos();
+  window.hasUnsavedChanges = false;
+  if (replacePhotos && window.autoSaveReady) await saveAutoDraft();
+  return missingPhotos;
+}
+
+async function laadProject(event) {
   const fileInput = event.target;
   if (!fileInput.files || fileInput.files.length === 0) return;
-  const fr = new FileReader();
-  fr.onload = (evt) => {
-    try {
-      const parsed = JSON.parse(evt.target.result);
-      if (parsed.global) {
-        window.projectData = parsed.data;
-        window.globalSettings = parsed.global;
-      } else {
-        window.projectData = parsed;
-        window.globalSettings = {
-          showHeader: false,
-          project: "",
-          locatie: "",
-          opdrachtgever: "",
-          onderzoeker: "",
-        };
-      }
-      window.currentGPO = 0;
-      wisselGPO(1);
-
-      window.hasUnsavedChanges = false;
-
-      alert("✅ Project succesvol geladen!");
-    } catch (error) {
-      console.error(error);
-      alert("❌ Fout: Dit is geen geldig JSON bestand.");
-    }
-  };
-  fr.readAsText(fileInput.files[0]);
+  const file = fileInput.files[0];
   fileInput.value = "";
+  try {
+    let parsed;
+    let zip = null;
+    if (file.name.toLowerCase().endsWith(".zip")) {
+      if (typeof JSZip === "undefined")
+        throw new Error("ZIP-ondersteuning is niet beschikbaar.");
+      zip = await JSZip.loadAsync(file);
+      const projectEntry = zip.file("project.json");
+      if (!projectEntry)
+        throw new Error("project.json ontbreekt in het ZIP-bestand.");
+      parsed = JSON.parse(await projectEntry.async("text"));
+    } else {
+      parsed = JSON.parse(await file.text());
+    }
+    const missingPhotos = await applyLoadedProject(parsed, zip, true);
+    toonNotificatie(
+      missingPhotos
+        ? `Project geladen; ${missingPhotos} foto('s) ontbreken.`
+        : "Project succesvol geladen.",
+      missingPhotos ? "fout" : "succes",
+    );
+  } catch (error) {
+    console.error(error);
+    toonNotificatie(`Project laden mislukt: ${error.message}`, "fout");
+  }
 }
 
 function updateBeschrijving() {
@@ -2810,7 +3122,7 @@ function syncHoogte(bron) {
         }
     `;
 
-  window.hasUnsavedChanges = true;
+  markProjectChanged();
 
   updateUI();
   updateRootUI();
@@ -2841,7 +3153,7 @@ function syncBreedte(bron) {
             min-width: ${val}px !important;
         }
     `;
-  window.hasUnsavedChanges = true;
+  markProjectChanged();
 }
 
 function syncOpacity(type, bron) {
@@ -2871,5 +3183,5 @@ function syncOpacity(type, bron) {
     // Koppel de waarde (0 tot 1) direct aan de CSS variabele
     document.documentElement.style.setProperty("--disp-opacity", val / 100);
   }
-  window.hasUnsavedChanges = true;
+  markProjectChanged();
 }

@@ -32,6 +32,10 @@ body {
 .top-nav-btn:hover { background: #e0e0e0; color: #000; }
 .top-nav-btn.active { background: #000; color: #fff; font-weight: 600; }
 .file-actions { display: flex; align-items: center; gap: 5px; }
+.autosave-status { font-size: 11px; color: #667; min-width: 92px; white-space: nowrap; }
+.autosave-status.saving { color: #8a5a00; }
+.autosave-status.saved { color: #2e7d32; }
+.autosave-status.error { color: #b00020; }
 .tb-btn { cursor: pointer; background: transparent; border: none; font-size: 12px; font-weight: 500; color: #333; padding: 6px 10px; border-radius: 4px; }
 .tb-btn:hover { background: #f5f5f5; }
 .img-btn { color: #0056b3; font-weight: 600; }
