@@ -320,6 +320,14 @@ body.field-mode #col-data {
     height: auto;
     max-height: none;
 }
+body.field-mode #col-data { order: 1; }
+body.field-mode #col-left { order: 2; }
+body.field-mode #col-right { order: 3; }
+body.field-mode #col-vis { order: 4; }
+body.field-mode #visual-settings,
+body.field-mode .generated-description,
+body.field-mode #advanced-options { display: none !important; }
+body.field-mode #profielgegevens-heading { scroll-margin-top: 64px; }
 body.field-mode .panel { height: auto; overflow: visible; }
 body.field-mode .row { flex-wrap: wrap; gap: 10px; }
 body.field-mode .row > .float-group { min-width: 120px; flex: 1 1 120px !important; }

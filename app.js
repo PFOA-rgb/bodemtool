@@ -10,6 +10,7 @@ window.currentGPO = 1;
 window.projectData = {};
 for (let i = 1; i <= 10; i++) window.projectData[i] = null;
 window.rootColorCache = {};
+window.activeTab = null;
 
 // Variabele om wijzigingen bij te houden
 window.hasUnsavedChanges = false;
@@ -1487,6 +1488,8 @@ function generateStripeSVG(density, dikte) {
 // ==========================================
 
 function wisselTab(tabNaam) {
+  const vorigeTab = window.activeTab;
+  window.activeTab = tabNaam;
   ["view-fysisch", "view-beworteling"].forEach(
     (id) => (document.getElementById(id).style.display = "none"),
   );
@@ -1531,7 +1534,19 @@ function wisselTab(tabNaam) {
     document.getElementById("header-text-input").value = currentHeader;
     if (tabNaam === "beworteling") updateRootUI();
     if (tabNaam === "fysisch") updateUI();
+
+    if (vorigeTab && vorigeTab !== tabNaam) scrollFieldModeToProfile();
   }
+}
+
+function scrollFieldModeToProfile() {
+  if (!document.body.classList.contains("field-mode")) return;
+  requestAnimationFrame(() => {
+    document.getElementById("profielgegevens-heading")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  });
 }
 
 function genereerGPOTabs() {
@@ -1748,6 +1763,7 @@ function wisselGPO(nieuwNummer) {
   renderGPOTabs();
   syncMaxDieptes();
   renderFieldPhotos();
+  scrollFieldModeToProfile();
 }
 
 function slaHuidigProfielOpInGeheugen() {

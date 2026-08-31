@@ -205,6 +205,7 @@
                 </div>
 
                 <div
+                    id="visual-settings"
                     style="
                         padding: 10px;
                         border-top: 1px solid #eee;
@@ -214,19 +215,6 @@
                         gap: 10px;
                     "
                 >
-                    <div class="row" style="margin-bottom: 0">
-                        <div class="float-group" style="width: 100px">
-                            <input
-                                type="number"
-                                id="maxDiepte"
-                                class="float-input"
-                                value="100"
-                                onchange="syncMaxDieptes()"
-                            />
-                            <label class="float-label">Max Diepte (cm)</label>
-                        </div>
-                    </div>
-
                     <div
                         class="row"
                         style="margin-bottom: 0; align-items: center"
@@ -433,7 +421,11 @@
                     </div>
                 </div>
 
-                <h3 class="simple-title" style="margin-top: 20px">
+                <h3
+                    id="profielgegevens-heading"
+                    class="simple-title"
+                    style="margin-top: 20px"
+                >
                     Profielgegevens (Per Boom)
                 </h3>
                 <div class="input-card" style="border-left: 4px solid #0056b3">
@@ -501,13 +493,24 @@
                                 >Datum uitvoering</label
                             >
                         </div>
+                        <div class="float-group" style="width: 100%">
+                            <input
+                                type="number"
+                                id="maxDiepte"
+                                class="float-input"
+                                value="100"
+                                min="1"
+                                onchange="syncMaxDieptes()"
+                            />
+                            <label class="float-label">Max. diepte (cm)</label>
+                        </div>
                     </div>
                 </div>
 
-                <h3 class="simple-title" style="margin-top: 20px">
+                <h3 class="simple-title generated-description" style="margin-top: 20px">
                     Beschrijving fysisch
                 </h3>
-                <div style="position: relative">
+                <div class="generated-description" style="position: relative">
                     <textarea
                         id="beschrijving-output"
                         class="input-card"
@@ -539,10 +542,10 @@
                     </button>
                 </div>
 
-                <h3 class="simple-title" style="margin-top: 14px">
+                <h3 class="simple-title generated-description" style="margin-top: 14px">
                     Beschrijving wortelontwikkeling
                 </h3>
-                <div style="position: relative">
+                <div class="generated-description" style="position: relative">
                     <textarea
                         id="wortel-beschrijving-output"
                         class="input-card"
@@ -577,6 +580,7 @@
                 </div>
 
                 <div
+                    id="advanced-options"
                     style="
                         margin-top: auto;
                         padding-top: 20px;
