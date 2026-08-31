@@ -36,6 +36,7 @@ body {
 .autosave-status.saving { color: #8a5a00; }
 .autosave-status.saved { color: #2e7d32; }
 .autosave-status.error { color: #b00020; }
+.last-export-status { font-size: 11px; color: #556; white-space: nowrap; }
 .danger-btn { color: #b00020; border: 1px solid #d9a2aa; }
 .danger-btn:hover { background: #fff0f2; }
 .tb-btn { cursor: pointer; background: transparent; border: none; font-size: 12px; font-weight: 500; color: #333; padding: 6px 10px; border-radius: 4px; }
@@ -367,7 +368,20 @@ body.field-mode #top-menu-bar {
     flex-wrap: wrap;
     padding: 6px 8px;
     gap: 6px;
+    position: sticky;
+    top: 0;
+    z-index: 5000;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
+body.field-mode #nav-collage { display: none; }
+body.field-mode .file-actions { flex-wrap: wrap; margin-left: auto; }
+body.field-mode #export-project-btn {
+    background: #2e7d32;
+    color: #fff;
+    font-weight: 700;
+    border: 1px solid #236327;
+}
+body.field-mode #export-project-btn:hover { background: #236327; }
 body.field-mode #dashboard-container {
     flex-direction: column;
     white-space: normal;

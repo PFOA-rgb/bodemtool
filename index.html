@@ -72,7 +72,7 @@
             <div style="flex: 1"></div>
             <div class="file-actions">
                 <label class="tb-btn"
-                    >Laden
+                    ><span id="load-project-label">Laden</span>
                     <input
                         type="file"
                         id="file-input"
@@ -80,7 +80,13 @@
                         onchange="laadProject(event)"
                         style="display: none"
                 /></label>
-                <button class="tb-btn" onclick="slaOpProject()">Opslaan</button>
+                <button
+                    id="export-project-btn"
+                    class="tb-btn"
+                    onclick="slaOpProject()"
+                >
+                    Opslaan
+                </button>
                 <button
                     class="tb-btn danger-btn"
                     onclick="wisAlles()"
@@ -89,6 +95,7 @@
                     Alles wissen
                 </button>
                 <span id="autosave-status" class="autosave-status" aria-live="polite"></span>
+                <span id="last-export-status" class="last-export-status"></span>
             </div>
         </div>
 

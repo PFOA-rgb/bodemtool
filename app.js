@@ -151,10 +151,22 @@ const KLEUR_NAMEN = {
 function applyFieldMode(enabled) {
   document.body.classList.toggle("field-mode", enabled);
   const btn = document.getElementById("field-mode-toggle");
+  const exportBtn = document.getElementById("export-project-btn");
+  const loadLabel = document.getElementById("load-project-label");
   if (btn) {
     btn.classList.toggle("active", enabled);
     btn.setAttribute("aria-pressed", enabled ? "true" : "false");
     btn.innerText = enabled ? "Veldmodus aan" : "Veldmodus";
+  }
+  if (exportBtn)
+    exportBtn.textContent = enabled ? "Alles exporteren" : "Opslaan";
+  if (loadLabel)
+    loadLabel.textContent = enabled ? "Project laden" : "Laden";
+  if (
+    enabled &&
+    document.getElementById("nav-collage")?.classList.contains("active")
+  ) {
+    wisselTab("fysisch");
   }
 }
 
@@ -214,6 +226,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   window.autoSaveReady = true;
   window.hasUnsavedChanges = false;
   setAutoSaveStatus("Lokaal opgeslagen", "saved");
+  updateLastExportStatus();
   requestPersistentStorage();
 });
 
@@ -1715,6 +1728,23 @@ function setAutoSaveStatus(text, state = "") {
   status.className = `autosave-status ${state}`.trim();
 }
 
+function updateLastExportStatus() {
+  const status = document.getElementById("last-export-status");
+  if (!status) return;
+  const timestamp = window.globalSettings.lastExportedAt;
+  if (!timestamp) {
+    status.textContent = "Nog niet geëxporteerd";
+    return;
+  }
+  const date = new Date(timestamp);
+  status.textContent = Number.isNaN(date.getTime())
+    ? ""
+    : `Laatst geëxporteerd: ${date.toLocaleTimeString("nl-NL", {
+        hour: "2-digit",
+        minute: "2-digit",
+      })}`;
+}
+
 function markProjectChanged() {
   window.hasUnsavedChanges = true;
   if (!window.autoSaveReady) return;
@@ -1804,6 +1834,7 @@ async function wisAlles() {
     wisselTab("fysisch");
     window.hasUnsavedChanges = false;
     setAutoSaveStatus("Leeg project", "saved");
+    updateLastExportStatus();
     toonNotificatie("Het volledige project is gewist.", "succes");
     requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "smooth" }));
   } catch (error) {
@@ -2223,6 +2254,31 @@ function getPhotoArchivePath(gpoNumber, category, index) {
   return `GPO_${gpoNumber}/fotos/GPO_${gpoNumber}_${category}_${index + 1}.jpg`;
 }
 
+function getProjectExportSummary(gpoNummers) {
+  let photoCount = 0;
+  gpoNummers.forEach((nummer) => {
+    const photos = projectData[nummer]?.photos || getEmptyPhotos();
+    photoCount += (photos.fysisch || []).length;
+    photoCount += (photos.beworteling || []).length;
+  });
+  return { gpoCount: gpoNummers.length, photoCount };
+}
+
+function getLocalDateStamp(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function getFieldProjectFilename() {
+  updateGlobalMeta();
+  const project = cleanBestandsnaam(window.globalSettings.project);
+  const location = cleanBestandsnaam(window.globalSettings.locatie);
+  const prefix = [project || "Bodemtool", location].filter(Boolean).join("_");
+  return `${prefix}_${getLocalDateStamp()}_bodemtool.zip`;
+}
+
 function buildProjectExportData(gpoNummers = null) {
   updateGlobalMeta();
   slaHuidigProfielOpInGeheugen();
@@ -2303,7 +2359,12 @@ async function voegGPOAanZipToe(zip, nummer, includeImages) {
   if (currentGPO !== vorigeGPO) wisselGPO(vorigeGPO);
 }
 
-async function exportGPOsZip(gpoNummers, filename, includeImages = true) {
+async function exportGPOsZip(
+  gpoNummers,
+  filename,
+  includeImages = true,
+  includeReport = true,
+) {
   if (typeof JSZip === "undefined") {
     toonNotificatie("ZIP export is niet beschikbaar. Controleer je internetverbinding.", "fout");
     return;
@@ -2314,8 +2375,20 @@ async function exportGPOsZip(gpoNummers, filename, includeImages = true) {
       "project.json",
       JSON.stringify(buildProjectExportData(gpoNummers), null, 2),
     );
-    zip.file("rapportage_tekst.txt", buildRapportageTekst(gpoNummers));
+    if (includeReport)
+      zip.file("rapportage_tekst.txt", buildRapportageTekst(gpoNummers));
     for (const nummer of gpoNummers) await voegGPOAanZipToe(zip, nummer, includeImages);
+    if (!zip.file("project.json"))
+      throw new Error("project.json ontbreekt in de export.");
+    for (const nummer of gpoNummers) {
+      const photos = projectData[nummer]?.photos || getEmptyPhotos();
+      for (const category of ["fysisch", "beworteling"]) {
+        for (const [index] of (photos[category] || []).entries()) {
+          const path = getPhotoArchivePath(nummer, category, index);
+          if (!zip.file(path)) throw new Error(`Foto ontbreekt in export: ${path}`);
+        }
+      }
+    }
     const blob = await zip.generateAsync({ type: "blob" });
     return await saveBlobBestand(blob, filename, [
       {
@@ -2359,17 +2432,29 @@ async function slaOpProject() {
   for (let nummer = 1; nummer <= 10; nummer++) {
     if (projectData[nummer]) nummers.push(nummer);
   }
-  const project = cleanBestandsnaam(window.globalSettings.project) || "Bodemtool";
+  const summary = getProjectExportSummary(
+    nummers.length ? nummers : [currentGPO],
+  );
+  const previousExportTime = window.globalSettings.lastExportedAt || null;
+  window.globalSettings.lastExportedAt = new Date().toISOString();
   const opgeslagen = await exportGPOsZip(
     nummers.length ? nummers : [currentGPO],
-    `${project}_project.zip`,
+    getFieldProjectFilename(),
+    false,
     false,
   );
 
   if (opgeslagen) {
     window.hasUnsavedChanges = false;
     await saveAutoDraft();
-    toonNotificatie("Project opgeslagen.", "succes");
+    updateLastExportStatus();
+    toonNotificatie(
+      `Project geëxporteerd: ${summary.gpoCount} GPO's en ${summary.photoCount} foto's.`,
+      "succes",
+    );
+  } else {
+    window.globalSettings.lastExportedAt = previousExportTime;
+    updateLastExportStatus();
   }
 }
 
@@ -2444,6 +2529,7 @@ async function applyLoadedProject(parsed, zip = null, replacePhotos = true) {
   window.currentGPO = 0;
   wisselGPO(1);
   await renderFieldPhotos();
+  updateLastExportStatus();
   window.hasUnsavedChanges = false;
   if (replacePhotos && window.autoSaveReady) await saveAutoDraft();
   return missingPhotos;
