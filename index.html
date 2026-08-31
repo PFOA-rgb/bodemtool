@@ -106,14 +106,6 @@
                         </div>
                     </div>
                     <div id="bodem-container"></div>
-                    <div class="field-photo-panel field-only" id="photos-fysisch-panel">
-                        <div class="field-photo-header">
-                            <strong>Foto’s fysisch</strong>
-                            <button class="tb-btn" onclick="triggerFieldPhotoUpload('fysisch')">+ Foto toevoegen</button>
-                        </div>
-                        <div class="field-photo-grid" id="photos-fysisch-grid"></div>
-                        <div class="field-photo-note">Maximaal 4 foto's. Foto’s worden verkleind en automatisch lokaal opgeslagen.</div>
-                    </div>
                 </div>
                 <div id="input-sectie-opname" style="display: none">
                     <div class="section-header">
@@ -134,14 +126,6 @@
                         </div>
                     </div>
                     <div id="opname-container"></div>
-                    <div class="field-photo-panel field-only" id="photos-beworteling-panel">
-                        <div class="field-photo-header">
-                            <strong>Foto’s wortelontwikkeling</strong>
-                            <button class="tb-btn" onclick="triggerFieldPhotoUpload('beworteling')">+ Foto toevoegen</button>
-                        </div>
-                        <div class="field-photo-grid" id="photos-beworteling-grid"></div>
-                        <div class="field-photo-note">Maximaal 4 foto's. Foto’s worden verkleind en automatisch lokaal opgeslagen.</div>
-                    </div>
                 </div>
             </div>
 
@@ -378,6 +362,25 @@
                         </div>
                     </div>
                     <div id="stab-container"></div>
+                </div>
+            </div>
+
+            <div class="panel field-photo-stage field-only" id="field-photo-stage">
+                <div class="field-photo-panel" id="photos-fysisch-panel">
+                    <div class="field-photo-header">
+                        <strong>Foto’s fysisch</strong>
+                        <button class="tb-btn" onclick="triggerFieldPhotoUpload('fysisch')">+ Foto toevoegen</button>
+                    </div>
+                    <div class="field-photo-grid" id="photos-fysisch-grid"></div>
+                    <div class="field-photo-note">Maximaal 4 foto's. Foto’s worden verkleind en automatisch lokaal opgeslagen.</div>
+                </div>
+                <div class="field-photo-panel" id="photos-beworteling-panel" style="display: none">
+                    <div class="field-photo-header">
+                        <strong>Foto’s wortelontwikkeling</strong>
+                        <button class="tb-btn" onclick="triggerFieldPhotoUpload('beworteling')">+ Foto toevoegen</button>
+                    </div>
+                    <div class="field-photo-grid" id="photos-beworteling-grid"></div>
+                    <div class="field-photo-note">Maximaal 4 foto's. Foto’s worden verkleind en automatisch lokaal opgeslagen.</div>
                 </div>
             </div>
 

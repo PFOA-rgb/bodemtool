@@ -1509,6 +1509,10 @@ function wisselTab(tabNaam) {
     const inputOpname = document.getElementById("input-sectie-opname");
     const inputOndergrond = document.getElementById("input-sectie-ondergrond");
     const inputStab = document.getElementById("input-sectie-stab");
+    const photosFysisch = document.getElementById("photos-fysisch-panel");
+    const photosBeworteling = document.getElementById(
+      "photos-beworteling-panel",
+    );
 
     if (inputBodem)
       inputBodem.style.display = tabNaam === "fysisch" ? "flex" : "none";
@@ -1518,6 +1522,11 @@ function wisselTab(tabNaam) {
       inputOndergrond.style.display = tabNaam === "fysisch" ? "flex" : "none";
     if (inputStab)
       inputStab.style.display = tabNaam === "beworteling" ? "flex" : "none";
+    if (photosFysisch)
+      photosFysisch.style.display = tabNaam === "fysisch" ? "block" : "none";
+    if (photosBeworteling)
+      photosBeworteling.style.display =
+        tabNaam === "beworteling" ? "block" : "none";
 
     document.getElementById("vis-fysisch-wrapper").style.display =
       tabNaam === "fysisch" ? "flex" : "none";

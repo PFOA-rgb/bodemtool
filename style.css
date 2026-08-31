@@ -318,7 +318,8 @@ body.field-mode #dashboard-container {
 body.field-mode #col-left,
 body.field-mode #col-vis,
 body.field-mode #col-right,
-body.field-mode #col-data {
+body.field-mode #col-data,
+body.field-mode #field-photo-stage {
     width: 100%;
     min-width: 0;
     height: auto;
@@ -327,7 +328,14 @@ body.field-mode #col-data {
 body.field-mode #col-data { order: 1; }
 body.field-mode #col-left { order: 2; }
 body.field-mode #col-right { order: 3; }
-body.field-mode #col-vis { order: 4; }
+body.field-mode #field-photo-stage { order: 4; }
+body.field-mode #col-vis { order: 5; }
+body.field-mode .field-photo-stage {
+    padding: 10px;
+    background: transparent;
+    border: none;
+}
+body.field-mode .field-photo-stage .field-photo-panel { margin: 0; }
 body.field-mode #visual-settings,
 body.field-mode .generated-description,
 body.field-mode #advanced-options { display: none !important; }
