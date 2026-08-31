@@ -374,7 +374,7 @@ body.field-mode .field-only { display: block; }
     display: block;
     margin-bottom: 6px;
 }
-.field-photo-card img {
+.field-photo-preview img {
     width: 100%;
     height: 100%;
     object-fit: contain;
@@ -416,6 +416,11 @@ body.photo-lightbox-open { overflow: hidden !important; }
     align-items: center;
     gap: 12px;
     color: #fff;
+}
+.photo-lightbox-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 .photo-lightbox-header .tb-btn {
     background: #fff;

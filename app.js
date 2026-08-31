@@ -1625,6 +1625,7 @@ let storageDbPromise = null;
 let fieldPhotoObjectUrls = [];
 let fieldPhotoRenderVersion = 0;
 let lightboxObjectUrl = null;
+let lightboxPhotoId = null;
 let desktopPhotoObjectUrls = [];
 let desktopPhotoRenderVersion = 0;
 
@@ -1867,6 +1868,7 @@ async function openPhotoLightbox(photoId, label) {
     return;
   }
   closePhotoLightbox();
+  lightboxPhotoId = photoId;
   lightboxObjectUrl = URL.createObjectURL(blob);
   const lightbox = document.getElementById("photo-lightbox");
   document.getElementById("photo-lightbox-title").textContent =
@@ -1885,6 +1887,54 @@ function closePhotoLightbox() {
   document.body.classList.remove("photo-lightbox-open");
   if (lightboxObjectUrl) URL.revokeObjectURL(lightboxObjectUrl);
   lightboxObjectUrl = null;
+  lightboxPhotoId = null;
+}
+
+async function convertPhotoToPng(blob) {
+  if (blob.type === "image/png") return blob;
+  const source = await decodePhotoBlob(blob);
+  try {
+    const width = source.width || source.naturalWidth;
+    const height = source.height || source.naturalHeight;
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    canvas.getContext("2d").drawImage(source, 0, 0, width, height);
+    return await new Promise((resolve, reject) => {
+      canvas.toBlob(
+        (result) =>
+          result ? resolve(result) : reject(new Error("PNG maken mislukt.")),
+        "image/png",
+      );
+    });
+  } finally {
+    source.close?.();
+  }
+}
+
+async function copyPhotoToClipboard(photoId) {
+  try {
+    if (!navigator.clipboard?.write || typeof ClipboardItem === "undefined") {
+      throw new Error("Afbeeldingen kopiëren wordt niet ondersteund in deze browser.");
+    }
+    const blob = await getPhotoBlob(photoId);
+    if (!blob) throw new Error("Foto ontbreekt in de lokale opslag.");
+    const pngBlob = await convertPhotoToPng(blob);
+    await navigator.clipboard.write([
+      new ClipboardItem({ "image/png": pngBlob }),
+    ]);
+    toonNotificatie("Afbeelding gekopieerd naar het klembord.", "succes");
+  } catch (error) {
+    console.error(error);
+    toonNotificatie(
+      error.message || "Afbeelding kopiëren mislukt.",
+      "fout",
+    );
+  }
+}
+
+function copyLightboxPhoto() {
+  if (lightboxPhotoId) copyPhotoToClipboard(lightboxPhotoId);
 }
 
 document.addEventListener("keydown", (event) => {
@@ -2204,12 +2254,17 @@ async function renderDesktopPhotoManager() {
     rotateRight.type = "button";
     rotateRight.textContent = "↷ Rechts";
     rotateRight.onclick = () => rotateFieldPhoto(category, index, 90);
+    const copy = document.createElement("button");
+    copy.className = "action-btn";
+    copy.type = "button";
+    copy.textContent = "Kopieer afbeelding";
+    copy.onclick = () => copyPhotoToClipboard(photo.id);
     const remove = document.createElement("button");
     remove.className = "action-btn";
     remove.type = "button";
     remove.textContent = "Verwijder";
     remove.onclick = () => removeFieldPhoto(category, index);
-    actions.append(rotateLeft, rotateRight, remove);
+    actions.append(rotateLeft, rotateRight, copy, remove);
 
     card.append(categoryBadge, preview, nameInput, selections, actions);
     grid.appendChild(card);

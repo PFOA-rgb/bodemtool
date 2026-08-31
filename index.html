@@ -771,9 +771,19 @@
             <div class="photo-lightbox-content">
                 <div class="photo-lightbox-header">
                     <strong id="photo-lightbox-title">Foto controleren</strong>
-                    <button class="tb-btn" type="button" onclick="closePhotoLightbox()">
-                        Sluiten
-                    </button>
+                    <div class="photo-lightbox-actions">
+                        <button
+                            id="photo-lightbox-copy"
+                            class="tb-btn"
+                            type="button"
+                            onclick="copyLightboxPhoto()"
+                        >
+                            Kopieer afbeelding
+                        </button>
+                        <button class="tb-btn" type="button" onclick="closePhotoLightbox()">
+                            Sluiten
+                        </button>
+                    </div>
                 </div>
                 <img id="photo-lightbox-image" alt="Grote weergave van de geselecteerde foto" />
             </div>
