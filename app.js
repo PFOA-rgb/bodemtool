@@ -1607,8 +1607,15 @@ function renderGPOTabs() {
 
 function heeftGPOData(gpoData) {
   if (!gpoData) return false;
-  return ["b", "o", "ro", "rs"].some(
+  const hasProfileData = ["b", "o", "ro", "rs"].some(
     (key) => Array.isArray(gpoData[key]) && gpoData[key].length > 0,
+  );
+  const photos = gpoData.photos || {};
+  return (
+    hasProfileData ||
+    ["fysisch", "beworteling"].some(
+      (category) => Array.isArray(photos[category]) && photos[category].length > 0,
+    )
   );
 }
 
@@ -1628,6 +1635,7 @@ let lightboxObjectUrl = null;
 let lightboxPhotoId = null;
 let desktopPhotoObjectUrls = [];
 let desktopPhotoRenderVersion = 0;
+let recoveryPhotoObjectUrls = [];
 
 function openStorageDb() {
   if (!storageDbPromise) {
@@ -1687,6 +1695,230 @@ function deletePhotoBlob(id) {
   return runStorageTransaction(PHOTO_STORE, "readwrite", (store) =>
     store.delete(id),
   );
+}
+
+async function getAllStoredPhotoRecords() {
+  const db = await openStorageDb();
+  return new Promise((resolve, reject) => {
+    const request = db
+      .transaction(PHOTO_STORE, "readonly")
+      .objectStore(PHOTO_STORE)
+      .getAll();
+    request.onsuccess = () => resolve(request.result || []);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+function getStoredPhotoReferences() {
+  const references = new Map();
+  for (let nummer = 1; nummer <= 10; nummer++) {
+    const photos = window.projectData[nummer]?.photos || getEmptyPhotos();
+    for (const category of ["fysisch", "beworteling"]) {
+      (photos[category] || []).forEach((photo) => {
+        if (!photo.id) return;
+        if (!references.has(photo.id)) references.set(photo.id, []);
+        references.get(photo.id).push({ nummer, category });
+      });
+    }
+  }
+  return references;
+}
+
+function ensureGpoPhotoTarget(nummer) {
+  if (!window.projectData[nummer]) {
+    window.projectData[nummer] = {
+      max: "100",
+      b: [],
+      o: [],
+      ro: [],
+      rs: [],
+      photos: getEmptyPhotos(),
+      meta: { boom: "", dist: "", wind: "noordzijde", datum: "" },
+    };
+  }
+  if (!window.projectData[nummer].photos)
+    window.projectData[nummer].photos = getEmptyPhotos();
+  for (const category of ["fysisch", "beworteling"]) {
+    if (!Array.isArray(window.projectData[nummer].photos[category]))
+      window.projectData[nummer].photos[category] = [];
+  }
+  return window.projectData[nummer].photos;
+}
+
+async function openPhotoRecovery() {
+  try {
+    slaHuidigProfielOpInGeheugen();
+    const recovery = document.getElementById("photo-recovery");
+    recovery.hidden = false;
+    document.body.classList.add("photo-recovery-open");
+    await renderPhotoRecovery();
+    recovery.querySelector("button")?.focus();
+  } catch (error) {
+    console.error(error);
+    closePhotoRecovery();
+    toonNotificatie("De lokale foto-opslag kon niet worden gelezen.", "fout");
+  }
+}
+
+function closePhotoRecovery() {
+  const recovery = document.getElementById("photo-recovery");
+  if (recovery) recovery.hidden = true;
+  document.body.classList.remove("photo-recovery-open");
+  recoveryPhotoObjectUrls.forEach((url) => URL.revokeObjectURL(url));
+  recoveryPhotoObjectUrls = [];
+}
+
+async function renderPhotoRecovery() {
+  const grid = document.getElementById("photo-recovery-grid");
+  const summary = document.getElementById("photo-recovery-summary");
+  if (!grid || !summary) return;
+  recoveryPhotoObjectUrls.forEach((url) => URL.revokeObjectURL(url));
+  recoveryPhotoObjectUrls = [];
+  grid.innerHTML = "";
+  const records = (await getAllStoredPhotoRecords()).sort(
+    (a, b) => (a.updatedAt || 0) - (b.updatedAt || 0),
+  );
+  const references = getStoredPhotoReferences();
+  const orphanCount = records.filter((record) => !references.has(record.id)).length;
+  summary.textContent = `${records.length} foto('s) gevonden · ${orphanCount} nog niet gekoppeld`;
+  if (!records.length) {
+    const empty = document.createElement("div");
+    empty.className = "photo-recovery-empty";
+    empty.textContent = "In deze Safari-opslag zijn geen foto's gevonden.";
+    grid.appendChild(empty);
+    return;
+  }
+
+  records.forEach((record, recordIndex) => {
+    if (!(record.blob instanceof Blob)) return;
+    const url = URL.createObjectURL(record.blob);
+    recoveryPhotoObjectUrls.push(url);
+    const linkedTo = references.get(record.id) || [];
+    const card = document.createElement("article");
+    card.className = "photo-recovery-card";
+    const preview = document.createElement("button");
+    preview.type = "button";
+    preview.className = "photo-recovery-preview";
+    preview.title = "Bekijk foto groot";
+    preview.onclick = () => openPhotoLightbox(record.id, `Opgeslagen foto ${recordIndex + 1}`);
+    const image = document.createElement("img");
+    image.src = url;
+    image.alt = `Opgeslagen foto ${recordIndex + 1}`;
+    preview.appendChild(image);
+    const state = document.createElement("div");
+    state.className = `photo-recovery-state${linkedTo.length ? " linked" : ""}`;
+    state.textContent = linkedTo.length
+      ? `Gekoppeld aan ${linkedTo
+          .map(({ nummer, category }) =>
+            `GPO ${nummer} · ${category === "fysisch" ? "Fysisch" : "Wortelontwikkeling"}`,
+          )
+          .join(", ")}`
+      : "Niet gekoppeld aan het huidige project";
+    const date = document.createElement("div");
+    date.className = "photo-recovery-date";
+    date.textContent = record.updatedAt
+      ? `Opgeslagen: ${new Date(record.updatedAt).toLocaleString("nl-NL")}`
+      : "Opslagdatum onbekend";
+    card.append(preview, state, date);
+
+    if (!linkedTo.length) {
+      const controls = document.createElement("div");
+      controls.className = "photo-recovery-controls";
+      const gpoSelect = document.createElement("select");
+      gpoSelect.setAttribute("aria-label", "Doel-GPO");
+      for (let nummer = 1; nummer <= 10; nummer++) {
+        const option = document.createElement("option");
+        option.value = String(nummer);
+        option.textContent = `GPO ${nummer}`;
+        option.selected = nummer === currentGPO;
+        gpoSelect.appendChild(option);
+      }
+      const categorySelect = document.createElement("select");
+      categorySelect.setAttribute("aria-label", "Foto-onderdeel");
+      [
+        ["fysisch", "Fysisch"],
+        ["beworteling", "Wortelontwikkeling"],
+      ].forEach(([value, label]) => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = label;
+        categorySelect.appendChild(option);
+      });
+      const linkButton = document.createElement("button");
+      linkButton.type = "button";
+      linkButton.textContent = "Koppel deze foto";
+      linkButton.onclick = () =>
+        linkRecoveredPhoto(
+          record.id,
+          Number(gpoSelect.value),
+          categorySelect.value,
+          recordIndex,
+        );
+      controls.append(gpoSelect, categorySelect, linkButton);
+      card.appendChild(controls);
+    }
+    grid.appendChild(card);
+  });
+}
+
+async function linkRecoveredPhoto(photoId, nummer, category, recordIndex) {
+  try {
+    const blob = await getPhotoBlob(photoId);
+    if (!blob) throw new Error("De foto ontbreekt in de opslag.");
+    const photos = ensureGpoPhotoTarget(nummer);
+    if (photos[category].length >= MAX_FIELD_PHOTOS) {
+      toonNotificatie(`GPO ${nummer} heeft al 4 foto's bij dit onderdeel.`, "fout");
+      return;
+    }
+    photos[category].push({
+      id: photoId,
+      label: `Herstelde foto ${recordIndex + 1}`,
+      type: blob.type || "image/jpeg",
+      size: blob.size,
+    });
+    markProjectChanged();
+    clearTimeout(window.autoSaveTimer);
+    await saveAutoDraft();
+    renderGPOTabs();
+    if (nummer === currentGPO) await renderFieldPhotos();
+    await renderPhotoRecovery();
+    toonNotificatie(`Foto gekoppeld aan GPO ${nummer}.`, "succes");
+  } catch (error) {
+    console.error(error);
+    toonNotificatie("Foto herstellen mislukt.", "fout");
+  }
+}
+
+async function backupStoredPhotos() {
+  try {
+    if (typeof JSZip === "undefined")
+      throw new Error("ZIP-functionaliteit is niet beschikbaar.");
+    const records = await getAllStoredPhotoRecords();
+    if (!records.length) {
+      toonNotificatie("Er zijn geen opgeslagen foto's gevonden.", "fout");
+      return;
+    }
+    const zip = new JSZip();
+    const folder = zip.folder("opgeslagen_fotos");
+    records.forEach((record, index) => {
+      if (record.blob instanceof Blob)
+        folder.file(`opgeslagen_foto_${String(index + 1).padStart(3, "0")}.jpg`, record.blob);
+    });
+    zip.file(
+      "herstel_informatie.txt",
+      `${records.length} foto('s) rechtstreeks uit de lokale browseropslag veiliggesteld op ${new Date().toLocaleString("nl-NL")}.`,
+    );
+    const blob = await zip.generateAsync({ type: "blob" });
+    const saved = await saveBlobBestand(
+      blob,
+      `Bodemtool_fotoherstel_${getLocalDateStamp()}.zip`,
+      [{ description: "Bodemtool-fotoherstel", accept: { "application/zip": [".zip"] } }],
+    );
+    if (saved) toonNotificatie(`${records.length} foto's veiliggesteld.`, "succes");
+  } catch (error) {
+    console.error(error);
+    toonNotificatie(error.message || "Herstelkopie maken mislukt.", "fout");
+  }
 }
 
 async function prunePhotoStore(projectDataToKeep) {
@@ -1938,7 +2170,10 @@ function copyLightboxPhoto() {
 }
 
 document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape") closePhotoLightbox();
+  if (event.key === "Escape") {
+    closePhotoLightbox();
+    closePhotoRecovery();
+  }
 });
 
 function getEmptyPhotos() {

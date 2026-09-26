@@ -95,6 +95,14 @@
                     Opslaan
                 </button>
                 <button
+                    class="tb-btn recovery-btn"
+                    type="button"
+                    onclick="openPhotoRecovery()"
+                    title="Zoek alle foto's die nog in de browseropslag staan"
+                >
+                    Foto's zoeken
+                </button>
+                <button
                     class="tb-btn danger-btn"
                     onclick="wisAlles()"
                     title="Wis het volledige lokale project"
@@ -786,6 +794,37 @@
                     </div>
                 </div>
                 <img id="photo-lightbox-image" alt="Grote weergave van de geselecteerde foto" />
+            </div>
+        </div>
+
+        <div
+            id="photo-recovery"
+            class="photo-recovery"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="photo-recovery-title"
+            hidden
+        >
+            <div class="photo-recovery-backdrop" onclick="closePhotoRecovery()"></div>
+            <div class="photo-recovery-content">
+                <div class="photo-recovery-header">
+                    <div>
+                        <strong id="photo-recovery-title">Opgeslagen foto's herstellen</strong>
+                        <div id="photo-recovery-summary" class="photo-recovery-summary"></div>
+                    </div>
+                    <div class="photo-recovery-header-actions">
+                        <button class="tb-btn recovery-backup-btn" type="button" onclick="backupStoredPhotos()">
+                            Download herstelkopie ZIP
+                        </button>
+                        <button class="tb-btn" type="button" onclick="closePhotoRecovery()">
+                            Sluiten
+                        </button>
+                    </div>
+                </div>
+                <div class="photo-recovery-warning">
+                    Deze controle verwijdert niets. Download eerst een herstelkopie en koppel daarna alleen ontbrekende foto's.
+                </div>
+                <div id="photo-recovery-grid" class="photo-recovery-grid"></div>
             </div>
         </div>
 
